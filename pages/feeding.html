@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetFit - 급여량 & 영양소 분석</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/feeding_style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            animation: fadeIn 0.5s ease;
+            background: var(--bg);
+            padding: 0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        body.fade-out {
+            animation: fadeOut 0.35s ease forwards;
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-12px); }
+        }
+        .pet-nutri-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        }
+    </style>
+</head>
+<body>
+    <!-- PetFit 네비게이션 -->
+    <header class="navbar">
+        <a href="../index.html" class="logo" onclick="return transitionTo(this.href)">🐾 PetFit</a>
+        <nav>
+            <a href="../index.html" onclick="return transitionTo(this.href)">홈</a>
+            <a href="vet_map.html" onclick="return transitionTo(this.href)">🏥 동물병원</a>
+            <a href="food_analysis.html" onclick="return transitionTo(this.href)">📸 사료 분석</a>
+            <a href="feeding.html" class="active">🥣 급여량</a>
+            <a href="healthcare.html" onclick="return transitionTo(this.href)">📊 건강</a>
+            <a href="encyclopedia.html" onclick="return transitionTo(this.href)">📚 백과</a>
+        </nav>
+    </header>
+
+<div class="pet-nutri-container">
+
+    <!-- Header -->
+    <div class="pet-nutri-header">
+        <h1>🐕 PetNutri Engine v1.0</h1>
+        <p>반려동물 맞춤 영양학 실시간 급여량 & 6대 영양소 밸런스 위젯</p>
+    </div>
+
+    <!-- 반려견 정보 입력 -->
+    <div class="card">
+        <div class="card-title"><span class="icon">🐾</span> 반려견 정보</div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="petName">이름</label>
+                <input type="text" id="petName" placeholder="예: 콩이" value="콩이">
+            </div>
+            <div class="form-group">
+                <label for="petBreed">품종</label>
+                <input type="text" id="petBreed" placeholder="예: 말티즈" value="말티즈">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="petWeight">체중 (kg)</label>
+                <input type="number" id="petWeight" min="0.5" max="80" step="0.1" value="3.5">
+            </div>
+            <div class="form-group">
+                <label for="petAge">연령</label>
+                <input type="text" id="petAge" placeholder="예: 3살" value="3살">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="lifeStage">생애주기</label>
+                <select id="lifeStage">
+                    <option value="중성화 성견" selected>중성화 성견 (×1.6)</option>
+                    <option value="미중성화 성견">미중성화 성견 (×1.8)</option>
+                    <option value="자견(~4개월)">자견 ~4개월 (×3.0)</option>
+                    <option value="자견(4~12개월)">자견 4~12개월 (×2.0)</option>
+                    <option value="비만경향">비만경향 (×1.4)</option>
+                    <option value="체중감량 필요">체중감량 필요 (×1.1)</option>
+                    <option value="노령견">노령견 (×1.4)</option>
+                    <option value="활동량 많음">활동량 많음 (×2.0)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="mealsPerDay">하루 식사 횟수</label>
+                <select id="mealsPerDay">
+                    <option value="1">1회</option>
+                    <option value="2" selected>2회</option>
+                    <option value="3">3회</option>
+                    <option value="4">4회</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- 사료 선택 -->
+    <div class="card">
+        <div class="card-title"><span class="icon">🥫</span> 사료 선택</div>
+        <div class="form-group">
+            <label for="foodSelect">사료 제품</label>
+            <select id="foodSelect"></select>
+        </div>
+    </div>
+
+    <!-- 간식 선택 -->
+    <div class="card">
+        <div class="card-title"><span class="icon">🍪</span> 간식 선택 (수량 입력)</div>
+        <div id="treatList"></div>
+    </div>
+
+    <!-- 계산 버튼 -->
+    <button class="btn-calculate" onclick="calculate()">📊 실시간 급여량 & 6대 영양소 분석</button>
+
+    <!-- 결과 영역 -->
+    <div class="result-section" id="resultSection">
+
+        <!-- 경고 배너 -->
+        <div class="warning-banner" id="warningBanner"></div>
+
+        <!-- 급여량 요약 -->
+        <div class="card">
+            <div class="card-title"><span class="icon">📋</span> <span id="reportTitle">실시간 급여 처방</span></div>
+            <div class="summary-box">
+                <div class="summary-row">
+                    <span class="label">일일 목표 칼로리 (DER)</span>
+                    <span class="value highlight" id="derValue">-</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">RER (기초대사량)</span>
+                    <span class="value" id="rerValue">-</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">간식 총 칼로리</span>
+                    <span class="value" id="treatTotalKcal">-</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">간식 권장 한도 (10%)</span>
+                    <span class="value" id="treatLimitKcal">-</span>
+                </div>
+            </div>
+
+            <!-- 한 끼 권장 급여량 (g & 컵) -->
+            <div class="meal-prescription" id="mealPrescription">
+                <div class="meal-prescription-title">🍽️ 오늘의 한 끼 권장 급여량</div>
+                <div class="meal-prescription-main">
+                    <div class="prescription-value">
+                        <span class="big-number" id="oneMealGDisplay">-</span>
+                        <span class="unit">g</span>
+                    </div>
+                    <div class="prescription-divider"></div>
+                    <div class="prescription-value">
+                        <span class="big-number" id="oneMealCupDisplay">-</span>
+                        <span class="unit">컵</span>
+                    </div>
+                </div>
+                <p class="prescription-sub" id="prescriptionSub">하루 -회 기준 · 종이컵(180ml) 약 86g 환산</p>
+                <p class="prescription-note">⚠️ 사료 알갱이 밀도에 따라 컵 무게는 달라질 수 있어 g 계량이 더 정확합니다.</p>
+            </div>
+
+            <div class="feeding-change">
+                <div class="change-title">📊 간식 연동 사료량 변화</div>
+                <div class="change-row" id="baseDailyRow">🔹 간식 없을 때: -</div>
+                <div class="change-row" id="adjustedDailyRow">🔻 간식 반영 오늘: -</div>
+                <div class="change-row reduced" id="reducedRow">↓ 자동 차감: -</div>
+            </div>
+        </div>
+
+        <!-- 6대 영양소 원형 그래프 -->
+        <div class="card">
+            <div class="card-title"><span class="icon">🥣</span> 한 끼 6대 핵심 영양소 분석</div>
+            <div class="chart-container">
+                <canvas id="nutrientPieChart"></canvas>
+            </div>
+            <p class="chart-label" id="chartLabel">한 끼 -g 기준</p>
+
+            <div class="nutrient-list">
+                <div class="nutrient-item">
+                    <div class="nutrient-dot carb"></div>
+                    <div class="nutrient-info">
+                        <div class="name">탄수화물</div>
+                        <div class="grams" id="carbGrams">-</div>
+                    </div>
+                    <div class="nutrient-pct" id="carbPct">-</div>
+                </div>
+                <div class="nutrient-item">
+                    <div class="nutrient-dot protein"></div>
+                    <div class="nutrient-info">
+                        <div class="name">단백질</div>
+                        <div class="grams" id="proteinGrams">-</div>
+                    </div>
+                    <div class="nutrient-pct" id="proteinPct">-</div>
+                </div>
+                <div class="nutrient-item">
+                    <div class="nutrient-dot fat"></div>
+                    <div class="nutrient-info">
+                        <div class="name">지방</div>
+                        <div class="grams" id="fatGrams">-</div>
+                    </div>
+                    <div class="nutrient-pct" id="fatPct">-</div>
+                </div>
+                <div class="nutrient-item">
+                    <div class="nutrient-dot calcium"></div>
+                    <div class="nutrient-info">
+                        <div class="name">칼슘 (Ca)</div>
+                        <div class="grams" id="calciumGrams">-</div>
+                    </div>
+                    <div class="nutrient-pct" id="calciumPct">-</div>
+                </div>
+                <div class="nutrient-item">
+                    <div class="nutrient-dot phosphorus"></div>
+                    <div class="nutrient-info">
+                        <div class="name">인 (P)</div>
+                        <div class="grams" id="phosphorusGrams">-</div>
+                    </div>
+                    <div class="nutrient-pct" id="phosphorusPct">-</div>
+                </div>
+                <div class="nutrient-item">
+                    <div class="nutrient-dot omega3"></div>
+                    <div class="nutrient-info">
+                        <div class="name">오메가3 (Ω3)</div>
+                        <div class="grams" id="omega3Grams">-</div>
+                    </div>
+                    <div class="nutrient-pct" id="omega3Pct">-</div>
+                </div>
+                <div class="nutrient-item">
+                    <div class="nutrient-dot other"></div>
+                    <div class="nutrient-info">
+                        <div class="name">기타 (수분/조회분/섬유)</div>
+                        <div class="grams" id="otherGrams">-</div>
+                    </div>
+                    <div class="nutrient-pct" id="otherPct">-</div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /.result-section -->
+
+    <!-- Footer -->
+    <div class="pet-nutri-footer">
+        ※ AAFCO/WSAVA 가이드라인 기반 계산 | 수의사 상담을 권장합니다.
+    </div>
+
+</div>
+
+<script>
+// =============================================================================
+// [1] 마스터 데이터베이스
+// =============================================================================
+
+const FOOD_DB = {
+    1:  {name:"로얄캐닌 미니 인도어 어덜트", kcal100g:380, protein:19.0, fat:12.0, carb:51.0, calcium:0.81, phosphorus:0.60, omega3:0.25},
+    2:  {name:"로얄캐닌 미니 어덜트", kcal100g:396, protein:25.0, fat:14.0, carb:43.0, calcium:1.00, phosphorus:0.80, omega3:0.30},
+    3:  {name:"로얄캐닌 가스트로인테스티널", kcal100g:390, protein:23.0, fat:18.0, carb:41.0, calcium:1.15, phosphorus:1.00, omega3:0.30},
+    4:  {name:"힐스 사이언스 다이어트 스몰바이트", kcal100g:372, protein:21.0, fat:12.5, carb:48.5, calcium:0.84, phosphorus:0.70, omega3:0.50},
+    5:  {name:"힐스 처방식 z/d", kcal100g:358, protein:17.5, fat:13.0, carb:51.5, calcium:0.71, phosphorus:0.60, omega3:0.40},
+    6:  {name:"퓨리나 프로플랜 센서티브 연어", kcal100g:384, protein:26.0, fat:16.0, carb:40.0, calcium:1.20, phosphorus:1.00, omega3:0.80},
+    7:  {name:"나우 프레시 그레인프리 스몰브리드", kcal100g:370, protein:26.0, fat:16.0, carb:40.0, calcium:1.10, phosphorus:0.85, omega3:0.60},
+    8:  {name:"오리젠 오리지널 독", kcal100g:394, protein:38.0, fat:18.0, carb:26.0, calcium:1.40, phosphorus:1.20, omega3:0.80},
+    9:  {name:"오리젠 스몰브리드", kcal100g:390, protein:38.0, fat:18.0, carb:26.0, calcium:1.40, phosphorus:1.17, omega3:1.00},
+    10: {name:"아카나 프리런 폴트리", kcal100g:350, protein:29.0, fat:17.0, carb:36.0, calcium:1.30, phosphorus:1.00, omega3:0.50},
+    11: {name:"아카나 싱글즈 프리런 덕", kcal100g:340, protein:31.0, fat:15.0, carb:36.0, calcium:1.20, phosphorus:0.90, omega3:0.60},
+    12: {name:"고! 솔루션 LID 오리", kcal100g:399, protein:24.0, fat:12.0, carb:46.0, calcium:1.20, phosphorus:0.96, omega3:0.35},
+    13: {name:"하림 더리얼 그레인프리 크런치", kcal100g:375, protein:25.0, fat:14.0, carb:43.0, calcium:1.00, phosphorus:0.83, omega3:0.40},
+    14: {name:"하림 밥이보약 하루양식", kcal100g:365, protein:24.0, fat:12.0, carb:46.0, calcium:0.92, phosphorus:0.80, omega3:0.30},
+    15: {name:"네추럴코어 유기농 에코 1", kcal100g:355, protein:24.0, fat:12.0, carb:46.0, calcium:0.90, phosphorus:0.75, omega3:0.30},
+    16: {name:"네추럴코어 베네 M32 (소프트)", kcal100g:330, protein:22.0, fat:10.0, carb:46.0, calcium:0.88, phosphorus:0.80, omega3:0.25},
+    17: {name:"닥터독 피부모질 유기농", kcal100g:360, protein:25.0, fat:12.0, carb:45.0, calcium:0.96, phosphorus:0.80, omega3:0.50},
+    18: {name:"지위픽 에어드라이 소고기", kcal100g:550, protein:38.0, fat:30.0, carb:14.0, calcium:2.00, phosphorus:1.48, omega3:0.40},
+    19: {name:"스텔라앤츄이스 동결건조 치킨", kcal100g:490, protein:45.0, fat:30.0, carb:7.0, calcium:2.00, phosphorus:1.60, omega3:0.50},
+    20: {name:"인섹트도그 하이포알러젠", kcal100g:355, protein:22.0, fat:12.0, carb:48.0, calcium:0.92, phosphorus:0.80, omega3:0.20},
+};
+
+// 간식 DB (탄수화물 컬럼 제거 - 프롬프트 수정 반영)
+const TREAT_DB = {
+    S1:  {name:"동결건조 닭가슴살 큐브", unit:"1개", weightG:1.0, kcalUnit:3.8, protein:80.0, fat:3.0},
+    S2:  {name:"동결건조 열빙어", unit:"1마리", weightG:6.0, kcalUnit:22.0, protein:65.0, fat:12.0},
+    S3:  {name:"그리니즈 덴탈껌 티니", unit:"1개", weightG:8.0, kcalUnit:27.0, protein:30.0, fat:5.5},
+    S4:  {name:"윔지스 덴탈껌 XS", unit:"1개", weightG:7.5, kcalUnit:22.0, protein:1.5, fat:2.0},
+    S5:  {name:"포켄스 덴티페어리 SS", unit:"1개", weightG:5.0, kcalUnit:15.0, protein:5.0, fat:3.0},
+    S6:  {name:"조앤강 삼계탕전 스틱", unit:"1스틱", weightG:14.0, kcalUnit:12.0, protein:8.0, fat:1.5},
+    S7:  {name:"마이베프 퓨레 별자리스틱", unit:"1스틱", weightG:15.0, kcalUnit:14.0, protein:6.0, fat:1.0},
+    S8:  {name:"네추럴코어 오리안심 육포", unit:"1조각", weightG:10.0, kcalUnit:32.0, protein:65.0, fat:2.5},
+    S9:  {name:"굿밸런스 소고기 져키", unit:"1조각", weightG:10.0, kcalUnit:30.0, protein:45.0, fat:6.0},
+    S10: {name:"미니 불리스틱", unit:"1개", weightG:15.0, kcalUnit:55.0, protein:80.0, fat:1.5},
+};
+
+const LIFE_STAGE_FACTORS = {
+    "중성화 성견": 1.6,
+    "미중성화 성견": 1.8,
+    "자견(~4개월)": 3.0,
+    "자견(4~12개월)": 2.0,
+    "비만경향": 1.4,
+    "체중감량 필요": 1.1,
+    "노령견": 1.4,
+    "활동량 많음": 2.0,
+};
+
+// 종이컵 1컵 = 사료 약 86g 기준
+const CUP_GRAMS = 86;
+
+// =============================================================================
+// [2] 연산 로직
+// =============================================================================
+
+function calculateRER(weightKg) {
+    return 70 * Math.pow(weightKg, 0.75);
+}
+
+function calculateDER(rer, lifeStage) {
+    const factor = LIFE_STAGE_FACTORS[lifeStage] || 1.6;
+    return rer * factor;
+}
+
+function calculateMaxTreatKcal(der) {
+    return der * 0.10;
+}
+
+function calculateTotalTreatKcal() {
+    let total = 0;
+    for (const [id, treat] of Object.entries(TREAT_DB)) {
+        const input = document.getElementById('treat_' + id);
+        if (input) {
+            const qty = parseInt(input.value) || 0;
+            total += treat.kcalUnit * qty;
+        }
+    }
+    return total;
+}
+
+function getTreatSelections() {
+    const selections = [];
+    for (const [id, treat] of Object.entries(TREAT_DB)) {
+        const input = document.getElementById('treat_' + id);
+        if (input) {
+            const qty = parseInt(input.value) || 0;
+            if (qty > 0) {
+                selections.push({ id, qty, name: treat.name, kcal: treat.kcalUnit * qty });
+            }
+        }
+    }
+    return selections;
+}
+
+function calculateFeedingAmount(der, totalTreatKcal, foodId, mealsPerDay) {
+    const food = FOOD_DB[foodId];
+    const kcalPer100g = food.kcal100g;
+
+    const baseDailyG = (der / kcalPer100g) * 100;
+    const targetFoodKcal = Math.max(der - totalTreatKcal, 0);
+    const adjustedDailyG = (targetFoodKcal / kcalPer100g) * 100;
+    const oneMealG = adjustedDailyG / mealsPerDay;
+    const reducedG = baseDailyG - adjustedDailyG;
+
+    // 종이컵 환산
+    const oneMealCups = oneMealG / CUP_GRAMS;
+
+    return {
+        baseDailyG: Math.round(baseDailyG * 10) / 10,
+        targetFoodKcal: Math.round(targetFoodKcal * 10) / 10,
+        adjustedDailyG: Math.round(adjustedDailyG * 10) / 10,
+        oneMealG: Math.round(oneMealG * 10) / 10,
+        oneMealCups: Math.round(oneMealCups * 10) / 10,
+        reducedG: Math.round(reducedG * 10) / 10,
+    };
+}
+
+function calculateMealNutrients(oneMealG, foodId) {
+    const food = FOOD_DB[foodId];
+
+    // 6대 핵심 영양소 계산
+    const proteinG = oneMealG * (food.protein / 100);
+    const fatG = oneMealG * (food.fat / 100);
+    const carbG = oneMealG * (food.carb / 100);
+    const calciumG = oneMealG * (food.calcium / 100);
+    const phosphorusG = oneMealG * (food.phosphorus / 100);
+    const omega3G = oneMealG * (food.omega3 / 100);
+
+    // 기타 성분
+    const otherG = oneMealG - (proteinG + fatG + carbG + calciumG + phosphorusG + omega3G);
+
+    // mg 변환 (칼슘, 인, 오메가3)
+    const calciumMg = calciumG * 1000;
+    const phosphorusMg = phosphorusG * 1000;
+    const omega3Mg = omega3G * 1000;
+
+    // 비율 계산 (전체 대비 %)
+    const total = oneMealG;
+    let proteinPct = 0, fatPct = 0, carbPct = 0, calciumPct = 0, phosphorusPct = 0, omega3Pct = 0, otherPct = 0;
+    if (total > 0) {
+        proteinPct = (proteinG / total) * 100;
+        fatPct = (fatG / total) * 100;
+        carbPct = (carbG / total) * 100;
+        calciumPct = (calciumG / total) * 100;
+        phosphorusPct = (phosphorusG / total) * 100;
+        omega3Pct = (omega3G / total) * 100;
+        otherPct = (otherG / total) * 100;
+    }
+
+    return {
+        proteinG: round2(proteinG), fatG: round2(fatG), carbG: round2(carbG),
+        calciumG: round2(calciumG), phosphorusG: round2(phosphorusG), omega3G: round2(omega3G),
+        otherG: round2(otherG),
+        calciumMg: Math.round(calciumMg * 10) / 10,
+        phosphorusMg: Math.round(phosphorusMg * 10) / 10,
+        omega3Mg: Math.round(omega3Mg * 10) / 10,
+        proteinPct: round1(proteinPct), fatPct: round1(fatPct), carbPct: round1(carbPct),
+        calciumPct: round1(calciumPct), phosphorusPct: round1(phosphorusPct), omega3Pct: round1(omega3Pct),
+        otherPct: round1(otherPct),
+    };
+}
+
+function round1(v) { return Math.round(v * 10) / 10; }
+function round2(v) { return Math.round(v * 100) / 100; }
+
+// =============================================================================
+// [3] Chart.js 원형 그래프 (6대 영양소 + 기타)
+// =============================================================================
+
+let pieChart = null;
+
+function renderPieChart(nutrients) {
+    const ctx = document.getElementById('nutrientPieChart').getContext('2d');
+
+    if (pieChart) {
+        pieChart.destroy();
+    }
+
+    pieChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['탄수화물', '단백질', '지방', '칼슘(Ca)', '인(P)', '오메가3(Ω3)', '기타'],
+            datasets: [{
+                data: [
+                    nutrients.carbPct,
+                    nutrients.proteinPct,
+                    nutrients.fatPct,
+                    nutrients.calciumPct,
+                    nutrients.phosphorusPct,
+                    nutrients.omega3Pct,
+                    nutrients.otherPct
+                ],
+                backgroundColor: [
+                    '#FFD700', '#FF4500', '#FF8C00',
+                    '#4CAF50', '#2196F3', '#9C27B0',
+                    '#C0C0C0'
+                ],
+                borderColor: '#fff',
+                borderWidth: 2,
+                hoverOffset: 8,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ' + context.parsed.toFixed(1) + '%';
+                        }
+                    }
+                }
+            },
+            cutout: '40%',
+        }
+    });
+}
+
+// =============================================================================
+// [4] UI 초기화
+// =============================================================================
+
+function initFoodSelect() {
+    const select = document.getElementById('foodSelect');
+    for (const [id, food] of Object.entries(FOOD_DB)) {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = `[${id}] ${food.name} (${food.kcal100g}kcal/100g)`;
+        select.appendChild(option);
+    }
+}
+
+function initTreatList() {
+    const container = document.getElementById('treatList');
+    for (const [id, treat] of Object.entries(TREAT_DB)) {
+        const div = document.createElement('div');
+        div.className = 'treat-item';
+        div.innerHTML = `
+            <span class="treat-name">${treat.name}</span>
+            <span class="treat-kcal">${treat.kcalUnit}kcal/${treat.unit}</span>
+            <input type="number" id="treat_${id}" min="0" max="20" value="0">
+        `;
+        container.appendChild(div);
+    }
+}
+
+// =============================================================================
+// [5] 메인 계산 & 결과 렌더링
+// =============================================================================
+
+function calculate() {
+    // 입력값 수집
+    const petName = document.getElementById('petName').value || '반려견';
+    const petBreed = document.getElementById('petBreed').value || '-';
+    const petWeight = parseFloat(document.getElementById('petWeight').value) || 3.5;
+    const petAge = document.getElementById('petAge').value || '-';
+    const lifeStage = document.getElementById('lifeStage').value;
+    const mealsPerDay = parseInt(document.getElementById('mealsPerDay').value) || 2;
+    const foodId = parseInt(document.getElementById('foodSelect').value) || 1;
+
+    // 연산
+    const rer = calculateRER(petWeight);
+    const der = calculateDER(rer, lifeStage);
+    const maxTreatKcal = calculateMaxTreatKcal(der);
+    const totalTreatKcal = calculateTotalTreatKcal();
+    const treatWarning = totalTreatKcal > maxTreatKcal;
+
+    const feeding = calculateFeedingAmount(der, totalTreatKcal, foodId, mealsPerDay);
+    const nutrients = calculateMealNutrients(feeding.oneMealG, foodId);
+
+    // 경고 배너
+    const warningBanner = document.getElementById('warningBanner');
+    if (treatWarning) {
+        const over = round1(totalTreatKcal - maxTreatKcal);
+        warningBanner.textContent = `⚠️ 간식 칼로리가 권장 한도(DER의 10%)를 ${over}kcal 초과했습니다!`;
+        warningBanner.classList.add('active');
+    } else {
+        warningBanner.classList.remove('active');
+    }
+
+    // 리포트 타이틀
+    document.getElementById('reportTitle').textContent = `${petName} 맞춤 급여 처방 (g & 컵)`;
+
+    // 급여량 요약
+    document.getElementById('derValue').textContent = round1(der) + ' kcal/day';
+    document.getElementById('rerValue').textContent = round1(rer) + ' kcal';
+    document.getElementById('treatTotalKcal').textContent = round1(totalTreatKcal) + ' kcal';
+    document.getElementById('treatLimitKcal').textContent = round1(maxTreatKcal) + ' kcal';
+
+    if (treatWarning) {
+        document.getElementById('treatTotalKcal').classList.add('warning');
+    } else {
+        document.getElementById('treatTotalKcal').classList.remove('warning');
+    }
+
+    // 한 끼 권장 급여량 (g & 컵)
+    document.getElementById('oneMealGDisplay').textContent = feeding.oneMealG;
+    document.getElementById('oneMealCupDisplay').textContent = feeding.oneMealCups;
+    document.getElementById('prescriptionSub').textContent =
+        `하루 ${mealsPerDay}회 기준 · 종이컵(180ml) 약 ${CUP_GRAMS}g 환산`;
+
+    // 사료량 변화
+    document.getElementById('baseDailyRow').textContent =
+        `🔹 간식 없을 때: 하루 ${feeding.baseDailyG}g`;
+    document.getElementById('adjustedDailyRow').textContent =
+        `🔻 간식 반영 오늘: 하루 ${feeding.adjustedDailyG}g (끼니당 ${feeding.oneMealG}g ≈ ${feeding.oneMealCups}컵)`;
+    document.getElementById('reducedRow').textContent =
+        `↓ 간식으로 인해 하루 사료량 약 ${feeding.reducedG}g 자동 차감`;
+
+    // 6대 영양소 상세
+    document.getElementById('chartLabel').textContent = `한 끼 ${feeding.oneMealG}g 기준 · 6대 핵심 영양소`;
+    document.getElementById('carbGrams').textContent = `${nutrients.carbG}g`;
+    document.getElementById('carbPct').textContent = `${nutrients.carbPct}%`;
+    document.getElementById('proteinGrams').textContent = `${nutrients.proteinG}g`;
+    document.getElementById('proteinPct').textContent = `${nutrients.proteinPct}%`;
+    document.getElementById('fatGrams').textContent = `${nutrients.fatG}g`;
+    document.getElementById('fatPct').textContent = `${nutrients.fatPct}%`;
+    document.getElementById('calciumGrams').textContent = `${nutrients.calciumMg}mg`;
+    document.getElementById('calciumPct').textContent = `${nutrients.calciumPct}%`;
+    document.getElementById('phosphorusGrams').textContent = `${nutrients.phosphorusMg}mg`;
+    document.getElementById('phosphorusPct').textContent = `${nutrients.phosphorusPct}%`;
+    document.getElementById('omega3Grams').textContent = `${nutrients.omega3Mg}mg`;
+    document.getElementById('omega3Pct').textContent = `${nutrients.omega3Pct}%`;
+    document.getElementById('otherGrams').textContent = `${nutrients.otherG}g`;
+    document.getElementById('otherPct').textContent = `${nutrients.otherPct}%`;
+
+    // 원형 그래프 렌더링
+    renderPieChart(nutrients);
+
+    // 결과 영역 표시
+    document.getElementById('resultSection').classList.add('active');
+    document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// =============================================================================
+// 초기화
+// =============================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    initFoodSelect();
+    initTreatList();
+});
+</script>
+
+<script>
+function transitionTo(url) {
+    document.body.classList.add('fade-out');
+    setTimeout(() => { window.location.href = url; }, 350);
+    return false;
+}
+</script>
+</body>
+</html>

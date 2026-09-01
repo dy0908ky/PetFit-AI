@@ -1,0 +1,420 @@
+/* ===== 전역 설정 ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+}
+
+/* ===== 앱 컨테이너 ===== */
+.app-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+/* ===== 헤더 ===== */
+.app-header {
+    background: linear-gradient(135deg, #2d3436 0%, #000000 100%);
+    color: #fff;
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.header-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+.app-header h1 {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+}
+
+.header-subtitle {
+    font-size: 14px;
+    color: #adb5bd;
+    font-weight: 300;
+}
+
+/* ===== API Key 섹션 ===== */
+.api-section {
+    padding: 20px 30px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.api-input-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.api-input-group label {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.api-input-group input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: border-color 0.3s;
+}
+
+.api-input-group input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* ===== 입력 섹션 ===== */
+.input-section {
+    padding: 30px;
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #667eea;
+    display: inline-block;
+}
+
+.input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 30px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.input-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.input-group label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.input-group input {
+    padding: 10px 14px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-group input::placeholder {
+    color: #adb5bd;
+    font-size: 12px;
+}
+
+/* ===== 분석 버튼 ===== */
+.analyze-btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    font-family: 'Noto Sans KR', sans-serif;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.analyze-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.analyze-btn:active {
+    transform: translateY(0);
+}
+
+/* ===== 로딩 섹션 ===== */
+.loading-section {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #e9ecef;
+    border-top: 5px solid #667eea;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-section p {
+    font-size: 16px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* ===== 결과 섹션 ===== */
+.result-section {
+    padding: 30px;
+}
+
+/* 프로필 헤더 */
+.profile-header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #fff;
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 24px;
+}
+
+.profile-title-area h2 {
+    font-size: 22px;
+    font-weight: 900;
+    margin-bottom: 6px;
+}
+
+.profile-date {
+    font-size: 13px;
+    color: #adb5bd;
+    margin-bottom: 16px;
+}
+
+.profile-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.summary-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+}
+
+.summary-item .label {
+    font-size: 11px;
+    color: #adb5bd;
+    margin-bottom: 4px;
+}
+
+.summary-item .value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* ===== 리포트 카드 ===== */
+.report-card {
+    background: #fff;
+    border: 2px solid #e9ecef;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    transition: box-shadow 0.3s;
+}
+
+.report-card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.card-header h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #2d3436;
+}
+
+.card-badge {
+    font-size: 11px;
+    font-weight: 500;
+    background: #667eea;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.risk-badge {
+    background: #e74c3c;
+}
+
+.card-body {
+    padding: 24px;
+}
+
+/* 차트 컨테이너 */
+.chart-container {
+    width: 100%;
+    max-height: 300px;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.chart-container canvas {
+    width: 100% !important;
+    max-height: 280px;
+}
+
+/* 카드 텍스트 (AI 분석 결과) */
+.card-text {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #495057;
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    border-left: 4px solid #667eea;
+}
+
+.card-text h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #2d3436;
+    margin-bottom: 8px;
+    margin-top: 14px;
+}
+
+.card-text h4:first-child {
+    margin-top: 0;
+}
+
+.card-text ul {
+    margin-left: 16px;
+    margin-bottom: 8px;
+}
+
+.card-text li {
+    margin-bottom: 4px;
+}
+
+.risk-card .card-text {
+    border-left-color: #e74c3c;
+}
+
+/* ===== 리포트 푸터 ===== */
+.report-footer {
+    margin-top: 30px;
+    padding: 20px;
+    text-align: center;
+    border-top: 1px solid #e9ecef;
+}
+
+.report-footer p {
+    font-size: 12px;
+    color: #868e96;
+    font-weight: 400;
+    line-height: 1.6;
+}
+
+/* ===== 유틸리티 ===== */
+.hidden {
+    display: none !important;
+}
+
+/* ===== 반응형 ===== */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .app-header {
+        padding: 30px 16px;
+    }
+
+    .app-header h1 {
+        font-size: 22px;
+    }
+
+    .input-section {
+        padding: 20px 16px;
+    }
+
+    .input-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .api-input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .result-section {
+        padding: 20px 16px;
+    }
+
+    .profile-header {
+        padding: 20px;
+    }
+
+    .profile-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .card-body {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-summary {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .summary-item .value {
+        font-size: 14px;
+    }
+}

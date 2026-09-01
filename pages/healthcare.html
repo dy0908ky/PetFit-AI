@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetFit - 건강 프로필 레포트</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/healthcare_style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            animation: fadeIn 0.5s ease;
+            background: var(--bg);
+            padding: 0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        body.fade-out {
+            animation: fadeOut 0.35s ease forwards;
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-12px); }
+        }
+        .app-container {
+            max-width: 900px;
+            border-radius: 0;
+            box-shadow: none;
+            background: var(--bg);
+        }
+        .app-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            padding: 32px 20px;
+        }
+        .app-header h1 { font-size: 24px; }
+        .section-title { border-bottom-color: var(--primary); }
+        .analyze-btn { background: var(--primary); }
+        .analyze-btn:hover { box-shadow: 0 8px 25px rgba(232, 121, 10, 0.4); }
+        .input-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(232, 121, 10, 0.1); }
+        .card-badge { background: var(--primary); }
+        .card-text { border-left-color: var(--primary); }
+        .risk-card .card-text { border-left-color: #e03131; }
+        .profile-header { background: linear-gradient(135deg, #2d2013 0%, #4a3525 100%); }
+    </style>
+</head>
+<body>
+    <!-- PetFit 네비게이션 -->
+    <header class="navbar">
+        <a href="../index.html" class="logo" onclick="return transitionTo(this.href)">🐾 PetFit</a>
+        <nav>
+            <a href="../index.html" onclick="return transitionTo(this.href)">홈</a>
+            <a href="vet_map.html" onclick="return transitionTo(this.href)">🏥 동물병원</a>
+            <a href="food_analysis.html" onclick="return transitionTo(this.href)">📸 사료 분석</a>
+            <a href="feeding.html" onclick="return transitionTo(this.href)">🥣 급여량</a>
+            <a href="healthcare.html" class="active">📊 건강</a>
+            <a href="encyclopedia.html" onclick="return transitionTo(this.href)">📚 백과</a>
+        </nav>
+    </header>
+
+    <div class="app-container">
+        <!-- 헤더 -->
+        <header class="app-header">
+            <h1>📊 반려견 헬스 프로필 레포트</h1>
+            <p class="header-subtitle">견종 데이터 기반 건강 분석 (API 불필요)</p>
+        </header>
+
+        <!-- 입력 영역 -->
+        <section class="input-section">
+            <h2 class="section-title">📋 반려견 기본 정보 입력</h2>
+            <div class="input-grid">
+                <div class="input-group"><label for="breed">1. 견종</label><input type="text" id="breed" placeholder="예: 말티즈"></div>
+                <div class="input-group"><label for="gender">2. 성별</label><input type="text" id="gender" placeholder="성별 입력"></div>
+                <div class="input-group"><label for="weight">3. 체중 (숫자만)</label><input type="text" id="weight" placeholder="예: 4.5"></div>
+                <div class="input-group"><label for="age">4. 연령 (숫자만)</label><input type="text" id="age" placeholder="예: 5"></div>
+                <div class="input-group"><label for="disease">5. 지병</label><input type="text" id="disease" placeholder="지병이 있는 경우 입력"></div>
+                <div class="input-group"><label for="medication">6. 복용약</label><input type="text" id="medication" placeholder="복용약이 있는 경우 입력"></div>
+                <div class="input-group"><label for="surgery">7. 수술 경력</label><input type="text" id="surgery" placeholder="수술 이력 입력"></div>
+                <div class="input-group"><label for="activity">8. 야외 활동</label><input type="text" id="activity" placeholder="예: 하루 30분 산책"></div>
+                <div class="input-group"><label for="temperature">9. 체온</label><input type="text" id="temperature" placeholder="예: 38.5"></div>
+                <div class="input-group"><label for="bowel">10. 배변 활동</label><input type="text" id="bowel" placeholder="예: 하루 2회"></div>
+                <div class="input-group"><label for="water">11. 음수량</label><input type="text" id="water" placeholder="예: 300ml"></div>
+                <div class="input-group"><label for="sleep">12. 수면 상태</label><input type="text" id="sleep" placeholder="예: 12시간"></div>
+                <div class="input-group full-width"><label for="etc">13. 기타 특이사항</label><input type="text" id="etc" placeholder="기타 특이사항 입력"></div>
+            </div>
+            <button id="analyzeBtn" class="analyze-btn" onclick="generateReport()">🔍 건강 프로필 생성</button>
+        </section>
+
+        <!-- 결과 -->
+        <section id="resultSection" class="result-section hidden">
+            <div class="profile-header">
+                <div class="profile-title-area">
+                    <h2>🏥 반려견 헬스 프로필 리포트</h2>
+                    <p class="profile-date" id="reportDate"></p>
+                </div>
+                <div class="profile-summary" id="profileSummary"></div>
+            </div>
+
+            <div class="report-card">
+                <div class="card-header"><h3>📊 체중 변화 히스토리</h3><span class="card-badge">최근 6개월</span></div>
+                <div class="card-body">
+                    <div class="chart-container"><canvas id="weightChart"></canvas></div>
+                    <div class="card-text" id="weightAnalysis"></div>
+                </div>
+            </div>
+
+            <div class="report-card">
+                <div class="card-header"><h3>🏃 활동 및 생활 패턴</h3><span class="card-badge">패턴 분석</span></div>
+                <div class="card-body">
+                    <div class="chart-container"><canvas id="activityChart"></canvas></div>
+                    <div class="card-text" id="activityAnalysis"></div>
+                </div>
+            </div>
+
+            <div class="report-card risk-card">
+                <div class="card-header"><h3>⚠️ 예상 건강 위험 요소</h3><span class="card-badge risk-badge">주의</span></div>
+                <div class="card-body">
+                    <div class="chart-container"><canvas id="riskChart"></canvas></div>
+                    <div class="card-text" id="riskAnalysis"></div>
+                </div>
+            </div>
+
+            <footer class="report-footer">
+                <p>해당 분석 내용은 견주 및 수의사의 이해를 돕기 위한 자료이며, 구체적인 사항은 동물 병원 방문이 필요합니다.</p>
+            </footer>
+        </section>
+    </div>
+
+    <script src="../assets/js/healthcare_app.js"></script>
+    <script>
+        function transitionTo(url) {
+            document.body.classList.add('fade-out');
+            setTimeout(() => { window.location.href = url; }, 350);
+            return false;
+        }
+    </script>
+</body>
+</html>

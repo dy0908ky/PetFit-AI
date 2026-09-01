@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏥 PetFit - 동물병원 지도</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body {
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        body.fade-out {
+            animation: fadeOut 0.35s ease forwards;
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-12px); }
+        }
+        .map-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+            align-items: flex-end;
+        }
+        .map-controls .input-group {
+            margin-bottom: 0;
+            min-width: 180px;
+        }
+        .status-bar {
+            padding: 12px 16px;
+            background: #f1f3f5;
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-light);
+            margin-bottom: 16px;
+        }
+        .legend {
+            margin-top: 24px;
+        }
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            padding: 6px 10px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .legend-item .emoji {
+            font-size: 20px;
+        }
+        .emoji-marker {
+            background: none !important;
+            border: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- 네비게이션 -->
+    <header class="navbar">
+        <a href="../index.html" class="logo">🐾 PetFit</a>
+        <nav>
+            <a href="../index.html" onclick="return transitionTo(this.href)">홈</a>
+            <a href="vet_map.html" class="active">🏥 동물병원</a>
+            <a href="food_analysis.html" onclick="return transitionTo(this.href)">📸 사료 분석</a>
+            <a href="feeding.html" onclick="return transitionTo(this.href)">🥣 급여량</a>
+            <a href="healthcare.html" onclick="return transitionTo(this.href)">📊 건강</a>
+            <a href="encyclopedia.html" onclick="return transitionTo(this.href)">📚 백과</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <h1 style="margin-bottom:8px;">🏥 근처 동물병원 찾기</h1>
+        <p style="color:var(--text-light); margin-bottom:24px;">위치를 선택하면 근처 동물병원을 지도에 표시합니다. 마커를 클릭하면 전화를 바로 걸 수 있어요!</p>
+
+        <!-- 설정 영역 -->
+        <div class="card" style="margin-bottom:20px;">
+            <div class="map-controls">
+                <div class="input-group">
+                    <label for="kakao-key">Kakao REST API Key</label>
+                    <input type="password" id="kakao-key" placeholder="REST API 키 입력">
+                </div>
+                <div class="input-group">
+                    <label for="location-select">위치 선택</label>
+                    <select id="location-select">
+                        <option value="auto">📍 내 현재 위치 (자동)</option>
+                        <option value="37.4979,127.0276">서울 강남</option>
+                        <option value="37.5563,126.9236">서울 홍대</option>
+                        <option value="37.5665,126.9780">서울 시청</option>
+                        <option value="37.5133,127.1001">서울 잠실</option>
+                        <option value="37.5407,127.0700">서울 건대</option>
+                        <option value="37.2636,127.0286">수원</option>
+                        <option value="37.3595,127.1052">성남 분당</option>
+                        <option value="37.4563,126.7052">인천</option>
+                        <option value="36.3504,127.3845">대전</option>
+                        <option value="35.8714,128.6014">대구</option>
+                        <option value="35.1580,129.0596">부산 서면</option>
+                        <option value="35.1595,126.8526">광주</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="radius-select">검색 반경</label>
+                    <select id="radius-select">
+                        <option value="500">500m</option>
+                        <option value="1000">1km</option>
+                        <option value="2000" selected>2km</option>
+                        <option value="3000">3km</option>
+                        <option value="5000">5km</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="searchHospitals()">🔍 검색</button>
+            </div>
+        </div>
+
+        <!-- 상태 바 -->
+        <div id="status" class="status-bar">📍 위치를 선택하고 검색 버튼을 눌러주세요.</div>
+
+        <!-- 지도 -->
+        <div id="map"></div>
+
+        <!-- 병원 목록 -->
+        <div class="card hospital-list" id="hospital-list" style="margin-top:20px; display:none;">
+            <h3 style="margin-bottom:16px;">📋 동물병원 목록</h3>
+            <div id="hospital-items"></div>
+        </div>
+
+        <!-- 범례 -->
+        <div class="legend">
+            <h3>🗂️ 진료과목 아이콘 범례</h3>
+            <div class="legend-grid">
+                <div class="legend-item"><span class="emoji">👁️</span> 안과 전문</div>
+                <div class="legend-item"><span class="emoji">🦴</span> 정형외과</div>
+                <div class="legend-item"><span class="emoji">🧴</span> 피부과</div>
+                <div class="legend-item"><span class="emoji">🦷</span> 치과</div>
+                <div class="legend-item"><span class="emoji">💊</span> 내과</div>
+                <div class="legend-item"><span class="emoji">❤️</span> 심장 전문</div>
+                <div class="legend-item"><span class="emoji">🎗️</span> 종양 전문</div>
+                <div class="legend-item"><span class="emoji">🧠</span> 신경과</div>
+                <div class="legend-item"><span class="emoji">🌿</span> 한방</div>
+                <div class="legend-item"><span class="emoji">📷</span> 영상의학</div>
+                <div class="legend-item"><span class="emoji">🚨</span> 24시/응급</div>
+                <div class="legend-item"><span class="emoji">🏥</span> 종합병원</div>
+                <div class="legend-item"><span class="emoji">🐱</span> 고양이 전문</div>
+                <div class="legend-item"><span class="emoji">🦎</span> 특수동물</div>
+                <div class="legend-item"><span class="emoji">🐾</span> 일반 동물병원</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 플로팅 응급처치 버튼 -->
+    <button class="fab" id="fab-emergency" onclick="toggleEmergencyPanel()">
+        🚨
+    </button>
+
+    <!-- 응급처치 슬라이드 패널 -->
+    <div class="emergency-panel" id="emergency-panel">
+        <div class="panel-header">
+            <h3>🚨 응급처치 가이드</h3>
+            <button class="panel-close" onclick="toggleEmergencyPanel()">✕</button>
+        </div>
+
+        <!-- 탭 전환 -->
+        <div class="panel-tabs">
+            <button class="panel-tab active" onclick="switchTab('guide')">📋 가이드</button>
+            <button class="panel-tab" onclick="switchTab('chat')">💬 AI 상담</button>
+        </div>
+
+        <!-- 가이드 탭 -->
+        <div class="panel-content" id="tab-guide">
+            <div class="panel-emergency-grid" id="panel-emergency-grid"></div>
+            <div id="panel-guide-detail" style="display:none;"></div>
+            <button id="panel-back-btn" style="display:none;" class="btn btn-outline" onclick="showEmergencyList()">← 목록으로</button>
+        </div>
+
+        <!-- 챗봇 탭 -->
+        <div class="panel-content" id="tab-chat" style="display:none;">
+            <input type="hidden" id="panel-gemini-key">
+            <div class="panel-chat-messages" id="panel-chat-messages">
+                <div class="chat-message assistant">
+                    <div class="avatar">🐶</div>
+                    <div class="bubble">반려견 건강/응급처치에 대해 무엇이든 물어보세요!</div>
+                </div>
+            </div>
+            <div class="panel-chat-input">
+                <input type="text" id="panel-chat-input" placeholder="질문을 입력하세요..." onkeypress="if(event.key==='Enter')sendPanelMessage()">
+                <button onclick="sendPanelMessage()">전송</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 오버레이 -->
+    <div class="panel-overlay" id="panel-overlay" onclick="toggleEmergencyPanel()"></div>
+
+    <style>
+        /* 플로팅 버튼 */
+        .fab {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #e03131;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(224, 49, 49, 0.4);
+            z-index: 2000;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 24px rgba(224, 49, 49, 0.5);
+        }
+        .fab.active {
+            background: #495057;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+
+        /* 오버레이 */
+        .panel-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 2001;
+        }
+        .panel-overlay.active { display: block; }
+
+        /* 슬라이드 패널 */
+        .emergency-panel {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 400px;
+            height: 85vh;
+            background: #fff;
+            border-radius: 16px 16px 0 0;
+            box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+            z-index: 2002;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .emergency-panel.active {
+            transform: translateY(0);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .panel-header h3 { font-size: 16px; }
+        .panel-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f1f3f5;
+            border-radius: 50%;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* 탭 */
+        .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .panel-tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+        }
+        .panel-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* 패널 콘텐츠 */
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        /* 응급 상황 그리드 (패널 내부) */
+        .panel-emergency-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .panel-emergency-card {
+            background: #f8f9fa;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .panel-emergency-card:hover {
+            border-color: var(--primary);
+            background: #fff8f0;
+        }
+        .panel-emergency-card .icon { font-size: 28px; }
+        .panel-emergency-card .label { font-size: 12px; font-weight: 600; margin-top: 4px; }
+
+        /* 가이드 상세 (패널) */
+        #panel-guide-detail h4 { font-size: 14px; margin: 16px 0 8px; }
+        #panel-guide-detail ul { list-style: none; padding: 0; }
+        #panel-guide-detail ul li {
+            font-size: 13px;
+            padding: 6px 0 6px 20px;
+            position: relative;
+            line-height: 1.5;
+        }
+        #panel-guide-detail ul li::before {
+            content: attr(data-icon);
+            position: absolute;
+            left: 0;
+        }
+
+        /* 챗봇 (패널) */
+        .panel-input-group {
+            margin-bottom: 12px;
+        }
+        .panel-input-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .panel-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            max-height: calc(85vh - 280px);
+            margin-bottom: 12px;
+        }
+        .panel-chat-messages .chat-message {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 8px;
+        }
+        .panel-chat-messages .chat-message.user { flex-direction: row-reverse; }
+        .panel-chat-messages .avatar { font-size: 20px; min-width: 28px; }
+        .panel-chat-messages .bubble {
+            padding: 8px 12px;
+            border-radius: 10px;
+            max-width: 80%;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .panel-chat-messages .assistant .bubble {
+            background: #f1f3f5;
+            border: 1px solid var(--border);
+        }
+        .panel-chat-messages .user .bubble {
+            background: var(--primary);
+            color: #fff;
+        }
+        .panel-chat-input {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .panel-chat-input input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .panel-chat-input button {
+            padding: 8px 14px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 480px) {
+            .emergency-panel { width: 100%; }
+        }
+    </style>
+
+    <script>
+        // ─── 응급처치 패널 로직 ───
+        const panelEmergencyData = {
+            "구토/설사": { icon: "🤮", severity: "⚠️ 주의",
+                do: ["12~24시간 금식 (물 소량 제공)","구토물/설사 색·양·횟수 기록","탈수 방지 얼음 조각 핥게","금식 후 삶은 닭가슴살+쌀밥 소량"],
+                dont: ["사람용 지사제 먹이지 않기","억지로 물/음식 먹이지 않기","혼내거나 스트레스 주지 않기"],
+                hospital: ["하루 3회 이상 반복","혈변/검은 변","구토에 피 섞임","24시간 이상 지속"]
+            },
+            "경련/발작": { icon: "⚡", severity: "🔴 긴급",
+                do: ["주변 위험물 치우기","조용한 환경 만들기","발작 시간 측정","영상 촬영 (수의사용)"],
+                dont: ["입에 손/물건 넣지 않기","세게 누르지 않기","큰 소리 내지 않기"],
+                hospital: ["5분 이상 지속","하루 2회 이상","의식 미회복","처음 발작"]
+            },
+            "출혈/외상": { icon: "🩸", severity: "🔴 긴급",
+                do: ["거즈로 눌러 지혈","5~10분 일정 압력","상처를 심장보다 높게","이물질은 빼지 말고 병원"],
+                dont: ["알코올/과산화수소 금지","연고·밴드 금지","이물질 억지로 빼지 않기"],
+                hospital: ["5분 이상 지혈 불가","상처 깊음/벌어짐","뼈 보임","동물에게 물림"]
+            },
+            "중독": { icon: "☠️", severity: "🔴 긴급",
+                do: ["먹은 물질·양·시간 파악","포장지 보관 (병원용)","즉시 병원 전화","수의사 지시 전 구토 유도 금지"],
+                dont: ["임의 구토 유도 금지","우유/물 억지 투여 금지","시간 끌지 않기"],
+                hospital: ["중독 의심 시 무조건 즉시","초콜릿·포도·자일리톨 섭취","양파/마늘 섭취"]
+            },
+            "호흡곤란": { icon: "😮‍💨", severity: "🔴 긴급",
+                do: ["환기 잘 되는 곳으로","목줄/하네스 풀기","기도 확보","호흡수 측정 (정상 15~30회/분)"],
+                dont: ["물 억지로 먹이지 않기","입 벌리지 않기","흥분시키지 않기"],
+                hospital: ["잇몸/혀 파란색","분당 40회 이상","쌕쌕 소리","의식 흐림"]
+            },
+            "열사병": { icon: "🥵", severity: "🔴 긴급",
+                do: ["시원한 그늘로 이동","미지근한 물로 적셔주기","겨드랑이·사타구니에 젖은 수건","소량 물 마시게"],
+                dont: ["얼음물 담그지 않기","물 억지 투여 금지","수건으로 감싸지 않기"],
+                hospital: ["체온 41°C 이상","의식 흐림","구토/설사","10분 쿨링 후 미호전"]
+            },
+            "골절 의심": { icon: "🦴", severity: "⚠️ 주의~긴급",
+                do: ["움직임 최소화","부목 대용품으로 고정","차가운 팩(수건 감싸)","담요 들것 이동"],
+                dont: ["다친 부위 만지지 않기","뼈 맞추려 하지 않기","억지로 걷게 하지 않기"],
+                hospital: ["걷지 못함","비정상 부종","극심한 통증","뼈 노출"]
+            },
+            "의식 없음": { icon: "😵", severity: "🔴 최긴급",
+                do: ["기도 확보 (고개 젖히기)","호흡·심박 확인","CPR (분당 100~120회)","옆으로 눕히기","즉시 병원 이동"],
+                dont: ["오래 관찰하지 말기","물/음식 입에 넣지 않기","세게 흔들지 않기"],
+                hospital: ["의식 없음 = 즉시 응급","호흡 멈춤","심장 안 뜀"]
+            }
+        };
+
+        let panelOpen = false;
+        let panelChatHistory = [];
+        let currentPanelEmergency = null;
+
+        function toggleEmergencyPanel() {
+            panelOpen = !panelOpen;
+            document.getElementById('emergency-panel').classList.toggle('active', panelOpen);
+            document.getElementById('panel-overlay').classList.toggle('active', panelOpen);
+            document.getElementById('fab-emergency').classList.toggle('active', panelOpen);
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-guide').style.display = tab === 'guide' ? 'block' : 'none';
+            document.getElementById('tab-chat').style.display = tab === 'chat' ? 'block' : 'none';
+            event.currentTarget.classList.add('active');
+        }
+
+        // 응급 상황 카드 렌더링
+        const panelGrid = document.getElementById('panel-emergency-grid');
+        Object.entries(panelEmergencyData).forEach(([name, data]) => {
+            const card = document.createElement('div');
+            card.className = 'panel-emergency-card';
+            card.innerHTML = `<div class="icon">${data.icon}</div><div class="label">${name}</div>`;
+            card.onclick = () => showPanelGuide(name);
+            panelGrid.appendChild(card);
+        });
+
+        function showPanelGuide(name) {
+            currentPanelEmergency = name;
+            const data = panelEmergencyData[name];
+            let html = `
+                <h4>${data.icon} ${name} <span style="font-size:12px;">${data.severity}</span></h4>
+                <h4>✅ 해야 할 것</h4>
+                <ul>${data.do.map(i => `<li data-icon="✅">${i}</li>`).join('')}</ul>
+                <h4>❌ 하면 안 되는 것</h4>
+                <ul>${data.dont.map(i => `<li data-icon="❌">${i}</li>`).join('')}</ul>
+                <h4>🏥 즉시 병원</h4>
+                <ul>${data.hospital.map(i => `<li data-icon="🚨">${i}</li>`).join('')}</ul>
+            `;
+            document.getElementById('panel-guide-detail').innerHTML = html;
+            document.getElementById('panel-guide-detail').style.display = 'block';
+            document.getElementById('panel-emergency-grid').style.display = 'none';
+            document.getElementById('panel-back-btn').style.display = 'inline-flex';
+        }
+
+        function showEmergencyList() {
+            document.getElementById('panel-guide-detail').style.display = 'none';
+            document.getElementById('panel-emergency-grid').style.display = 'grid';
+            document.getElementById('panel-back-btn').style.display = 'none';
+            currentPanelEmergency = null;
+        }
+
+        // AI 챗봇
+        async function sendPanelMessage() {
+            const input = document.getElementById('panel-chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const apiKey = document.getElementById('panel-gemini-key').value.trim();
+            if (!apiKey) { alert('Gemini API Key를 입력해주세요.'); return; }
+
+            appendPanelMsg('user', message);
+            input.value = '';
+            panelChatHistory.push({ role: 'user', parts: [{ text: message }] });
+
+            // 로딩
+            const container = document.getElementById('panel-chat-messages');
+            const loadingEl = document.createElement('div');
+            loadingEl.className = 'chat-message assistant';
+            loadingEl.id = 'panel-typing';
+            loadingEl.innerHTML = '<div class="avatar">🐶</div><div class="bubble">...</div>';
+            container.appendChild(loadingEl);
+            container.scrollTop = container.scrollHeight;
+
+            try {
+                let sysText = `당신은 반려견 건강/응급처치 전문 AI 수의사입니다.
+한국어로 짧고 명확하게 답변하세요. 위험시 병원 방문을 권유하세요. 사람용 약물 추천 금지.`;
+                if (currentPanelEmergency) {
+                    const d = panelEmergencyData[currentPanelEmergency];
+                    sysText += `\n현재 상황: ${currentPanelEmergency}\n해야할것: ${d.do.join(', ')}\n금지: ${d.dont.join(', ')}`;
+                }
+
+                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        system_instruction: { parts: [{ text: sysText }] },
+                        contents: panelChatHistory
+                    })
+                });
+
+                document.getElementById('panel-typing')?.remove();
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    appendPanelMsg('assistant', `⚠️ ${err.error?.message || 'API 오류'}`);
+                    return;
+                }
+
+                const result = await resp.json();
+                const reply = result.candidates?.[0]?.content?.parts?.[0]?.text || '응답 생성 실패';
+                panelChatHistory.push({ role: 'model', parts: [{ text: reply }] });
+                appendPanelMsg('assistant', reply);
+            } catch (e) {
+                document.getElementById('panel-typing')?.remove();
+                appendPanelMsg('assistant', `⚠️ ${e.message}`);
+            }
+        }
+
+        function appendPanelMsg(role, text) {
+            const container = document.getElementById('panel-chat-messages');
+            const avatar = role === 'user' ? '🧑' : '🐶';
+            container.innerHTML += `
+                <div class="chat-message ${role}">
+                    <div class="avatar">${avatar}</div>
+                    <div class="bubble">${text.replace(/\n/g, '<br>')}</div>
+                </div>`;
+            container.scrollTop = container.scrollHeight;
+        }
+    </script>
+
+    <script>
+        // ─── 지도 초기화 ───
+        const map = L.map('map').setView([37.4979, 127.0276], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        let markers = [];
+        let circleLayer = null;
+
+        // ─── 진료과목 매핑 ───
+        const specialtyMap = [
+            { keywords: ['안과'], emoji: '👁️', label: '안과 전문' },
+            { keywords: ['정형', '외과', '골절'], emoji: '🦴', label: '정형외과' },
+            { keywords: ['피부'], emoji: '🧴', label: '피부과' },
+            { keywords: ['치과', '치의', '덴탈'], emoji: '🦷', label: '치과' },
+            { keywords: ['내과'], emoji: '💊', label: '내과' },
+            { keywords: ['심장', '순환기'], emoji: '❤️', label: '심장 전문' },
+            { keywords: ['종양', '암'], emoji: '🎗️', label: '종양 전문' },
+            { keywords: ['신경', '뇌'], emoji: '🧠', label: '신경과' },
+            { keywords: ['한방', '침'], emoji: '🌿', label: '한방' },
+            { keywords: ['영상', 'CT', 'MRI'], emoji: '📷', label: '영상의학' },
+            { keywords: ['야간', '24시', '응급'], emoji: '🚨', label: '24시/응급' },
+            { keywords: ['종합'], emoji: '🏥', label: '종합병원' },
+            { keywords: ['고양이', '캣'], emoji: '🐱', label: '고양이 전문' },
+            { keywords: ['특수', '이색', '파충류', '새', '조류', '토끼'], emoji: '🦎', label: '특수동물' },
+        ];
+
+        function getSpecialty(name) {
+            for (const spec of specialtyMap) {
+                for (const kw of spec.keywords) {
+                    if (name.includes(kw)) return spec;
+                }
+            }
+            return { emoji: '🐾', label: '동물병원' };
+        }
+
+        // ─── 마커 초기화 ───
+        function clearMarkers() {
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+            if (circleLayer) map.removeLayer(circleLayer);
+        }
+
+        // ─── 검색 실행 ───
+        async function searchHospitals() {
+            const apiKey = document.getElementById('kakao-key').value.trim();
+            if (!apiKey) {
+                document.getElementById('status').innerHTML = '⚠️ Kakao REST API Key를 입력해주세요.';
+                document.getElementById('status').style.background = '#ffe3e3';
+                return;
+            }
+
+            const locationValue = document.getElementById('location-select').value;
+            const radius = document.getElementById('radius-select').value;
+
+            if (locationValue === 'auto') {
+                // 브라우저 위치 자동 감지
+                document.getElementById('status').innerHTML = '📍 현재 위치를 확인하고 있습니다...';
+                document.getElementById('status').style.background = '#e7f5ff';
+
+                if (!navigator.geolocation) {
+                    document.getElementById('status').innerHTML = '⚠️ 이 브라우저에서는 위치 서비스를 지원하지 않습니다. 위치를 직접 선택해주세요.';
+                    document.getElementById('status').style.background = '#ffe3e3';
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        doSearch(apiKey, lat, lng, radius);
+                    },
+                    (error) => {
+                        document.getElementById('status').innerHTML = '⚠️ 위치 접근이 거부되었습니다. 위치를 직접 선택해주세요.';
+                        document.getElementById('status').style.background = '#ffe3e3';
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            } else {
+                const [lat, lng] = locationValue.split(',');
+                doSearch(apiKey, parseFloat(lat), parseFloat(lng), radius);
+            }
+        }
+
+        async function doSearch(apiKey, lat, lng, radius) {
+            document.getElementById('status').innerHTML = '🔍 동물병원을 검색하고 있습니다...';
+            document.getElementById('status').style.background = '#e7f5ff';
+
+            try {
+                const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=동물병원&y=${lat}&x=${lng}&radius=${radius}&sort=distance&size=15`;
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `KakaoAK ${apiKey}` }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    document.getElementById('status').innerHTML = `⚠️ API 오류: ${errorData.message || response.statusText}`;
+                    document.getElementById('status').style.background = '#ffe3e3';
+                    return;
+                }
+
+                const data = await response.json();
+                const hospitals = data.documents;
+
+                if (hospitals.length === 0) {
+                    document.getElementById('status').innerHTML = `😢 반경 ${radius}m 내에 동물병원을 찾지 못했습니다. 검색 반경을 늘려보세요.`;
+                    document.getElementById('status').style.background = '#fff3bf';
+                    return;
+                }
+
+                // 지도 업데이트
+                clearMarkers();
+                map.setView([lat, lng], 14);
+
+                // 내 위치 마커
+                const myMarker = L.marker([lat, lng], {
+                    icon: L.divIcon({
+                        html: '<div style="font-size:28px;text-align:center;">📍</div>',
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 32],
+                        className: 'emoji-marker'
+                    })
+                }).addTo(map).bindPopup('<strong>📍 내 위치</strong>');
+                markers.push(myMarker);
+
+                // 반경 원
+                circleLayer = L.circle([lat, lng], {
+                    radius: parseInt(radius),
+                    color: '#f5a623',
+                    fillColor: '#f5a623',
+                    fillOpacity: 0.08,
+                    weight: 1.5
+                }).addTo(map);
+
+                // 병원 마커
+                const bounds = L.latLngBounds([[lat, lng]]);
+                let listHTML = '';
+
+                hospitals.forEach(h => {
+                    const spec = getSpecialty(h.place_name);
+                    const hLat = parseFloat(h.y);
+                    const hLng = parseFloat(h.x);
+                    bounds.extend([hLat, hLng]);
+
+                    // 팝업 내용
+                    let phoneHTML = '';
+                    if (h.phone) {
+                        phoneHTML = `
+                            <div style="color:#e8790a;font-weight:500;margin:4px 0;">📞 ${h.phone}</div>
+                            <a href="tel:${h.phone}" class="btn-call" style="display:inline-block;margin-top:4px;text-decoration:none;">📱 전화 걸기</a>
+                        `;
+                    } else {
+                        phoneHTML = '<div style="color:#868e96;font-style:italic;">전화번호 정보 없음</div>';
+                    }
+
+                    const popupContent = `
+                        <div style="min-width:200px;font-family:-apple-system,sans-serif;line-height:1.6;">
+                            <div style="font-size:15px;font-weight:700;margin-bottom:4px;">${spec.emoji} ${h.place_name}</div>
+                            <span class="badge badge-specialty">${spec.emoji} ${spec.label}</span>
+                            <div style="font-size:12px;color:#495057;margin:6px 0;">${h.road_address_name || h.address_name}</div>
+                            ${phoneHTML}
+                            ${h.place_url ? `<div style="margin-top:8px;"><a href="${h.place_url}" target="_blank" style="font-size:12px;color:#e8790a;">🕐 영업시간·상세정보 →</a></div>` : ''}
+                        </div>
+                    `;
+
+                    const marker = L.marker([hLat, hLng], {
+                        icon: L.divIcon({
+                            html: `<div style="font-size:24px;text-align:center;">${spec.emoji}</div>`,
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 32],
+                            popupAnchor: [0, -28],
+                            className: 'emoji-marker'
+                        })
+                    }).addTo(map).bindPopup(popupContent);
+                    markers.push(marker);
+
+                    // 목록 HTML
+                    listHTML += `
+                        <div class="hospital-item">
+                            <div class="hospital-icon">${spec.emoji}</div>
+                            <div class="hospital-info">
+                                <h4>${h.place_name}</h4>
+                                <p>📍 ${h.road_address_name || h.address_name} | 🏷️ ${spec.label} | 📏 ${h.distance}m</p>
+                                ${h.place_url ? `<a href="${h.place_url}" target="_blank">🕐 영업시간·상세정보 보기 →</a>` : ''}
+                            </div>
+                            <div>
+                                ${h.phone ? `<a href="tel:${h.phone}" class="btn btn-call">📱 ${h.phone}</a>` : '<span style="color:#868e96;font-size:13px;">전화번호 없음</span>'}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                map.fitBounds(bounds, { padding: [30, 30] });
+
+                // 상태 업데이트
+                document.getElementById('status').innerHTML = `🐾 근처 동물병원 <strong>${hospitals.length}개</strong>를 찾았습니다! (반경 ${radius}m)`;
+                document.getElementById('status').style.background = '#fff3e0';
+
+                // 목록 표시
+                document.getElementById('hospital-items').innerHTML = listHTML;
+                document.getElementById('hospital-list').style.display = 'block';
+
+            } catch (error) {
+                document.getElementById('status').innerHTML = `⚠️ 네트워크 오류: ${error.message}`;
+                document.getElementById('status').style.background = '#ffe3e3';
+            }
+        }
+    </script>
+    <script src="../config.js"></script>
+    <script>
+        // config.js의 키를 자동으로 채움
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof GEMINI_API_KEY !== 'undefined' && GEMINI_API_KEY) {
+                const el = document.getElementById('panel-gemini-key');
+                if (el) el.value = GEMINI_API_KEY;
+            }
+        });
+        function transitionTo(url) {
+            document.body.classList.add('fade-out');
+            setTimeout(() => { window.location.href = url; }, 350);
+            return false;
+        }
+    </script>
+</body>
+</html>

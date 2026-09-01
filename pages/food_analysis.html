@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetFit - 사료 추천 적합도 분석</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/food_style.css">
+    <style>
+        body {
+            animation: fadeIn 0.5s ease;
+            background: var(--bg);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        body.fade-out {
+            animation: fadeOut 0.35s ease forwards;
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-12px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- PetFit 네비게이션 -->
+    <header class="navbar">
+        <a href="../index.html" class="logo" onclick="return transitionTo(this.href)">🐾 PetFit</a>
+        <nav>
+            <a href="../index.html" onclick="return transitionTo(this.href)">홈</a>
+            <a href="vet_map.html" onclick="return transitionTo(this.href)">🏥 동물병원</a>
+            <a href="food_analysis.html" class="active">📸 사료 분석</a>
+            <a href="feeding.html" onclick="return transitionTo(this.href)">🥣 급여량</a>
+            <a href="healthcare.html" onclick="return transitionTo(this.href)">📊 건강</a>
+            <a href="encyclopedia.html" onclick="return transitionTo(this.href)">📚 백과</a>
+        </nav>
+    </header>
+
+    <div class="app-container">
+        <!-- 헤더 -->
+        <header class="header">
+            <h1>🍖 사료 추천 적합도 분석</h1>
+            <p class="subtitle">우리 아이에게 맞는 사료인지 AI가 분석해드려요</p>
+        </header>
+
+        <!-- Step 1: 반려견 프로필 -->
+        <section class="section" id="profileSection">
+            <div class="section-title">
+                <span class="section-icon">📋</span>
+                <h2>반려견 프로필</h2>
+                <button class="btn-toggle" id="profileToggle" onclick="toggleProfile()">접기</button>
+            </div>
+
+            <div class="profile-form" id="profileForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>이름</label>
+                        <input type="text" id="dogName" placeholder="예: 초코">
+                    </div>
+                    <div class="form-group">
+                        <label>견종</label>
+                        <input type="text" id="dogBreed" placeholder="예: 말티즈">
+                    </div>
+                    <div class="form-group">
+                        <label>나이</label>
+                        <input type="text" id="dogAge" placeholder="예: 3세">
+                    </div>
+                    <div class="form-group">
+                        <label>체중 (kg)</label>
+                        <input type="number" id="dogWeight" placeholder="5.0" step="0.5" min="0.5" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>중성화 여부</label>
+                        <select id="dogNeutered">
+                            <option value="중성화 완료">중성화 완료</option>
+                            <option value="중성화 미완료">중성화 미완료</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>체형 (BCS)</label>
+                        <select id="dogBody">
+                            <option value="마름 (BCS 1-3)">마름 (BCS 1-3)</option>
+                            <option value="보통 (BCS 4-5)" selected>보통 (BCS 4-5)</option>
+                            <option value="과체중 (BCS 6-7)">과체중 (BCS 6-7)</option>
+                            <option value="비만 (BCS 8-9)">비만 (BCS 8-9)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>활동량</label>
+                        <select id="dogActivity">
+                            <option value="낮음">낮음</option>
+                            <option value="보통" selected>보통</option>
+                            <option value="높음">높음</option>
+                            <option value="매우 높음">매우 높음</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>생애주기</label>
+                        <select id="dogStage">
+                            <option value="퍼피 (성장기)">퍼피 (성장기)</option>
+                            <option value="성견" selected>성견</option>
+                            <option value="노령견 (시니어)">노령견 (시니어)</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>알레르기 원료</label>
+                        <input type="text" id="dogAllergens" placeholder="예: 닭고기, 옥수수 (쉼표로 구분)">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>기저질환</label>
+                        <input type="text" id="dogConditions" placeholder="예: 관절염, 비만 (쉼표로 구분)">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveProfile()">✅ 프로필 저장</button>
+            </div>
+
+            <div class="profile-card" id="profileCard" style="display:none;">
+                <div class="profile-tags" id="profileTags"></div>
+                <div class="profile-warnings" id="profileWarnings"></div>
+            </div>
+        </section>
+
+        <!-- Step 2: 건강관리 Sector -->
+        <section class="section" id="sectorSection">
+            <div class="section-title">
+                <span class="section-icon">🎯</span>
+                <h2>건강관리 목표 선택</h2>
+            </div>
+            <div class="sector-grid" id="sectorGrid">
+                <button class="sector-btn active" data-sector="BASIC" onclick="selectSector(this)">기본 균형 식단</button>
+                <button class="sector-btn" data-sector="WEIGHT_LOSS" onclick="selectSector(this)">체중 감량</button>
+                <button class="sector-btn" data-sector="WEIGHT_GAIN" onclick="selectSector(this)">체중 증량</button>
+                <button class="sector-btn" data-sector="JOINT" onclick="selectSector(this)">관절·이동성</button>
+                <button class="sector-btn" data-sector="SKIN" onclick="selectSector(this)">피부·피모</button>
+                <button class="sector-btn" data-sector="DIGESTION" onclick="selectSector(this)">소화·장 건강</button>
+                <button class="sector-btn" data-sector="SENIOR" onclick="selectSector(this)">시니어</button>
+                <button class="sector-btn" data-sector="GROWTH" onclick="selectSector(this)">성장기</button>
+                <button class="sector-btn" data-sector="DENTAL" onclick="selectSector(this)">구강·치아</button>
+            </div>
+        </section>
+
+        <!-- Step 3: 이미지 업로드 -->
+        <section class="section" id="uploadSection">
+            <div class="section-title">
+                <span class="section-icon">📸</span>
+                <h2>사료 영양성분표 업로드</h2>
+            </div>
+            <p class="hint">사료 포장지의 영양성분란을 촬영하여 업로드해주세요</p>
+
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📷</div>
+                <p>클릭하여 이미지 업로드</p>
+                <p class="upload-hint">JPG, PNG, WEBP 지원</p>
+                <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" onchange="handleFileUpload(event)" hidden>
+            </div>
+
+            <div class="image-preview" id="imagePreview" style="display:none;">
+                <img id="previewImg" src="" alt="업로드된 영양성분표">
+                <button class="btn-remove" onclick="removeImage()">✕ 이미지 제거</button>
+            </div>
+        </section>
+
+        <!-- 분석 버튼 -->
+        <section class="section" id="analyzeSection" style="display:none;">
+            <button class="btn btn-primary btn-large" id="analyzeBtn" onclick="analyzeFood()">
+                🔍 사료 적합도 분석 시작
+            </button>
+        </section>
+
+        <!-- 로딩 -->
+        <section class="section loading-section" id="loadingSection" style="display:none;">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">🧬 AI가 영양성분을 분석하고 있습니다...</p>
+        </section>
+
+        <!-- 결과 -->
+        <section class="section result-section" id="resultSection" style="display:none;">
+            <h2 class="result-title">📊 분석 결과</h2>
+            <div class="result-food-name" id="resultFoodName"></div>
+            <div class="result-sector">
+                <span class="sector-badge" id="resultSector"></span>
+            </div>
+
+            <!-- 건강 안전성 -->
+            <div class="safety-section">
+                <div class="safety-header">
+                    <h3>🛡️ 건강 안전성</h3>
+                    <button class="help-btn" onclick="toggleTooltip('safety')">?</button>
+                </div>
+                <div class="safety-badge-container" id="safetyBadge"></div>
+                <div class="tooltip-box" id="tooltip-safety" style="display:none;"></div>
+            </div>
+
+            <!-- PetFit Match 점수 -->
+            <div class="score-card" id="scoreCard">
+                <div class="score-label">PetFit Match</div>
+                <div class="score-value"><span id="scoreNumber">0</span><span class="score-max"> / 100</span></div>
+                <div class="score-desc" id="scoreDesc"></div>
+                <button class="help-icon" onclick="toggleScoreExplanation()">?</button>
+            </div>
+
+            <!-- 추천점수 설명 TAB -->
+            <div class="explanation-tab" id="scoreExplanation" style="display:none;">
+                <div class="explanation-header">
+                    <h4>추천 점수는 어떻게 산출되나요?</h4>
+                    <button class="btn-close" onclick="toggleScoreExplanation()">✕</button>
+                </div>
+                <div class="explanation-content">
+                    <p><strong>PetFit 사료 추천 점수는 단순히 '좋은 사료'를 평가하는 점수가 아닙니다.</strong></p>
+                    <p>우리 아이의 나이, 체중, 생활단계, 건강정보와 사료의 영양정보를 함께 비교하여 <strong>"이 사료가 지금 우리 아이에게 얼마나 잘 맞는지"</strong>를 100점 만점으로 계산합니다.</p>
+                    <h5>점수에는 다음 항목이 반영됩니다.</h5>
+                    <p><strong>영양기준 적합성 45%</strong> · 주요 영양성분과 완전사료 여부</p>
+                    <p><strong>생애주기 적합성 15%</strong> · 퍼피/성견/시니어 일치도</p>
+                    <p><strong>체중·에너지 적합성 20%</strong> · 체중, 체형, 활동량 대비 열량</p>
+                    <p><strong>건강관리 목표 15%</strong> · 선택한 Sector 맞춤 평가</p>
+                    <p><strong>과거 급여 경험 5%</strong> · 이전 기록 반영</p>
+                    <p><em>'기본 균형 식단' 선택 시 건강관리 목표 항목을 제외하고 정규화합니다.</em></p>
+                    <p><strong>"좋은 사료를 찾는 것이 아니라, 우리 아이에게 맞는 사료를 찾습니다."</strong></p>
+                </div>
+            </div>
+
+            <!-- 분석 정보 충족도 -->
+            <div class="coverage-section">
+                <div class="coverage-text">분석 정보 충족도 <strong id="coveragePercent">0</strong>%</div>
+                <div class="coverage-bar">
+                    <div class="coverage-fill" id="coverageFill" style="width:0%"></div>
+                </div>
+                <div class="unknown-items" id="unknownItems" style="display:none;"></div>
+            </div>
+
+            <!-- 세부내용 -->
+            <div class="detail-section">
+                <h3>📝 세부내용</h3>
+                <div class="detail-list" id="detailList"></div>
+            </div>
+
+            <!-- 새로운 분석 -->
+            <button class="btn btn-secondary btn-large" onclick="resetAnalysis()">🔄 새로운 사료 분석하기</button>
+
+            <!-- 추천사료 -->
+            <div class="recommend-section" id="recommendSection">
+                <h3>🏆 우리 아이에게 맞는 추천 사료 TOP 3</h3>
+                <p class="recommend-desc">현재 프로필과 건강관리 목표를 기반으로 추천합니다</p>
+                <div class="recommend-list" id="recommendList"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="../config.js"></script>
+    <script src="../assets/js/food_db.js"></script>
+    <script src="../assets/js/app.js"></script>
+    <script>
+        function transitionTo(url) {
+            document.body.classList.add('fade-out');
+            setTimeout(() => { window.location.href = url; }, 350);
+            return false;
+        }
+    </script>
+</body>
+</html>

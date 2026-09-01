@@ -1,0 +1,466 @@
+/* =============================================================================
+   PetNutri Engine v1.0 - 반려동물 맞춤 영양 위젯 스타일
+   기술스택: 단일 CSS / 모바일 반응형
+   6대 영양소 + 종이컵 환산 UI 포함
+   ============================================================================= */
+
+/* ── Reset & Base ── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+}
+
+/* ── Container ── */
+.pet-nutri-container {
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+/* ── Header ── */
+.pet-nutri-header {
+    text-align: center;
+    padding: 24px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px 20px 0 0;
+    color: #fff;
+}
+
+.pet-nutri-header h1 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.pet-nutri-header p {
+    font-size: 0.8rem;
+    opacity: 0.85;
+}
+
+/* ── Card ── */
+.card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #4a5568;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-title .icon {
+    font-size: 1.2rem;
+}
+
+/* ── Form Elements ── */
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+    background: #fafbfc;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    background: #fff;
+}
+
+.form-row {
+    display: flex;
+    gap: 10px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+/* ── Treat Selection ── */
+.treat-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #f8fafc;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.treat-item .treat-name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    flex: 1;
+}
+
+.treat-item .treat-kcal {
+    font-size: 0.72rem;
+    color: #888;
+    margin-right: 10px;
+}
+
+.treat-item input[type="number"] {
+    width: 52px;
+    padding: 5px 8px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.treat-item input[type="number"]:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* ── Calculate Button ── */
+.btn-calculate {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    margin-top: 8px;
+    margin-bottom: 16px;
+}
+
+.btn-calculate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-calculate:active {
+    transform: translateY(0);
+}
+
+/* ── Result Section ── */
+.result-section {
+    display: none;
+    animation: fadeInUp 0.4s ease;
+}
+
+.result-section.active {
+    display: block;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Summary Box ── */
+.summary-box {
+    background: linear-gradient(135deg, #e0e7ff 0%, #f0e6ff 100%);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 0.85rem;
+}
+
+.summary-row .label {
+    color: #555;
+    font-weight: 500;
+}
+
+.summary-row .value {
+    font-weight: 700;
+    color: #4a5568;
+}
+
+.summary-row .value.highlight {
+    color: #667eea;
+    font-size: 1rem;
+}
+
+.summary-row .value.warning {
+    color: #e53e3e;
+}
+
+/* ── Meal Prescription (한 끼 급여량 g & 컵) ── */
+.meal-prescription {
+    background: linear-gradient(135deg, #fef9e7 0%, #fff8e1 100%);
+    border: 1.5px solid #f5d060;
+    border-radius: 14px;
+    padding: 18px 16px;
+    margin: 14px 0;
+    text-align: center;
+}
+
+.meal-prescription-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #7c6f00;
+    margin-bottom: 12px;
+}
+
+.meal-prescription-main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 10px;
+}
+
+.prescription-value {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.prescription-value .big-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #5a4e00;
+}
+
+.prescription-value .unit {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #7c6f00;
+}
+
+.prescription-divider {
+    width: 1.5px;
+    height: 36px;
+    background: #dac44a;
+}
+
+.prescription-sub {
+    font-size: 0.75rem;
+    color: #8a7d00;
+    margin-bottom: 6px;
+}
+
+.prescription-note {
+    font-size: 0.7rem;
+    color: #b8860b;
+    font-style: italic;
+}
+
+/* ── Feeding Change ── */
+.feeding-change {
+    background: #f0fff4;
+    border: 1px solid #c6f6d5;
+    border-radius: 12px;
+    padding: 14px;
+    margin: 12px 0;
+}
+
+.feeding-change .change-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #276749;
+    margin-bottom: 8px;
+}
+
+.feeding-change .change-row {
+    font-size: 0.8rem;
+    color: #2f855a;
+    padding: 3px 0;
+}
+
+.feeding-change .change-row.reduced {
+    color: #e53e3e;
+    font-weight: 600;
+}
+
+/* ── Chart Section ── */
+.chart-container {
+    position: relative;
+    width: 100%;
+    max-width: 280px;
+    margin: 16px auto;
+}
+
+.chart-label {
+    text-align: center;
+    font-size: 0.78rem;
+    color: #888;
+    margin-top: 8px;
+}
+
+/* ── Nutrient Detail (6대 영양소) ── */
+.nutrient-list {
+    margin-top: 14px;
+}
+
+.nutrient-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.nutrient-item:last-child {
+    border-bottom: none;
+}
+
+.nutrient-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+/* 6대 영양소 색상 */
+.nutrient-dot.carb       { background: #FFD700; }
+.nutrient-dot.protein    { background: #FF4500; }
+.nutrient-dot.fat        { background: #FF8C00; }
+.nutrient-dot.calcium    { background: #4CAF50; }
+.nutrient-dot.phosphorus { background: #2196F3; }
+.nutrient-dot.omega3     { background: #9C27B0; }
+.nutrient-dot.other      { background: #C0C0C0; }
+
+.nutrient-info {
+    flex: 1;
+}
+
+.nutrient-info .name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.nutrient-info .grams {
+    font-size: 0.72rem;
+    color: #888;
+}
+
+.nutrient-pct {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #4a5568;
+}
+
+/* ── Warning Banner ── */
+.warning-banner {
+    display: none;
+    background: #fff5f5;
+    border: 1px solid #feb2b2;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    font-size: 0.8rem;
+    color: #c53030;
+    font-weight: 500;
+}
+
+.warning-banner.active {
+    display: block;
+}
+
+/* ── Widget JSON ── */
+.widget-json {
+    background: #1a202c;
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 12px;
+    overflow-x: auto;
+}
+
+.widget-json pre {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.72rem;
+    color: #a0e8af;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* ── Footer ── */
+.pet-nutri-footer {
+    text-align: center;
+    padding: 16px;
+    font-size: 0.72rem;
+    color: #888;
+}
+
+/* ── Responsive ── */
+@media (max-width: 400px) {
+    body {
+        padding: 10px;
+    }
+
+    .pet-nutri-header h1 {
+        font-size: 1.1rem;
+    }
+
+    .card {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .treat-item .treat-name {
+        font-size: 0.75rem;
+    }
+
+    .meal-prescription-main {
+        gap: 14px;
+    }
+
+    .prescription-value .big-number {
+        font-size: 1.6rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .pet-nutri-container {
+        max-width: 520px;
+    }
+}

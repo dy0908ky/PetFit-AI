@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetFit - 반려견 건강의 모든 것</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #e8790a;
+            --primary-dark: #d06a05;
+            --accent: #f5a623;
+            --bg: #fffbf5;
+            --card-bg: #ffffff;
+            --text: #2d2013;
+            --text-light: #5c4a37;
+            --text-muted: #9a8574;
+            --border: #f0e6da;
+            --shadow: 0 2px 8px rgba(139, 90, 43, 0.06);
+            --shadow-lg: 0 4px 16px rgba(139, 90, 43, 0.12);
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            animation: pageIn 0.5s ease;
+        }
+        @keyframes pageIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        body.fade-out { animation: pageOut 0.35s ease forwards; }
+        @keyframes pageOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-12px); }
+        }
+
+        /* ── 네비게이션 ── */
+        .navbar {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
+        .navbar .logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .navbar nav { display: flex; gap: 4px; flex-wrap: wrap; }
+        .navbar nav a {
+            text-decoration: none;
+            color: var(--text-light);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .navbar nav a:hover { background: var(--bg); color: var(--primary); }
+
+        /* ── 히어로 ── */
+        .hero {
+            text-align: center;
+            padding: 120px 24px 100px;
+            background: linear-gradient(135deg, #fffbf5 0%, #fff3e0 100%);
+            border-bottom: 1px solid var(--border);
+        }
+        .hero h1 {
+            font-size: 84px;
+            font-weight: 900;
+            color: var(--primary);
+            letter-spacing: -3px;
+            margin-bottom: 20px;
+        }
+        .hero .tagline {
+            font-size: 22px;
+            color: var(--text-light);
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+        .hero .sub-tagline {
+            font-size: 16px;
+            color: var(--text-muted);
+            max-width: 520px;
+            margin: 0 auto 44px;
+            line-height: 1.8;
+        }
+        .hero-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .btn {
+            display: inline-block;
+            padding: 15px 36px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(232, 121, 10, 0.3);
+        }
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+        .btn-outline:hover { background: var(--primary); color: #fff; }
+        .scroll-hint {
+            margin-top: 48px;
+            font-size: 13px;
+            color: var(--text-muted);
+            animation: float 2s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        /* ── 섹션 공통 ── */
+        .section { padding: 80px 24px; max-width: 1100px; margin: 0 auto; }
+        .section-alt { background: #fffbf5; max-width: none; }
+        .section-alt > * { max-width: 1100px; margin-left: auto; margin-right: auto; }
+        .section h2 { text-align: center; font-size: 28px; margin-bottom: 12px; }
+        .section-desc {
+            text-align: center;
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-bottom: 48px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* ── 사이클 ── */
+        .cycle-section {
+            padding: 80px 24px;
+            background: linear-gradient(135deg, #2d2013 0%, #4a3525 100%);
+            color: #fff;
+        }
+        .cycle-section h2 { color: #fff; text-align: center; font-size: 28px; margin-bottom: 12px; }
+        .cycle-section .section-desc { color: rgba(255,255,255,0.7); }
+        .cycle-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .cycle-step {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            padding: 28px 24px;
+            text-align: center;
+            flex: 1;
+            min-width: 220px;
+        }
+        .cycle-step .step-num {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        .cycle-step .step-icon { font-size: 36px; margin-bottom: 12px; }
+        .cycle-step h3 { font-size: 16px; margin-bottom: 6px; }
+        .cycle-step p { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6; }
+        .cycle-arrow { font-size: 24px; color: var(--accent); }
+
+        /* ── 점수 ── */
+        .score-content { max-width: 800px; margin: 0 auto; }
+        .score-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin: 32px 0;
+        }
+        .score-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .score-item .percent { font-size: 28px; font-weight: 800; color: var(--primary); }
+        .score-item .label { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+        .score-quote {
+            margin-top: 32px;
+            padding: 20px 24px;
+            background: #fffbf5;
+            border-left: 4px solid var(--primary);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-light);
+            font-style: italic;
+            line-height: 1.7;
+        }
+        .score-note {
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* ── 기능 카드 ── */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .feature-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px 24px;
+            position: relative;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+        .feature-card.coming:hover {
+            transform: none;
+            border-color: var(--border);
+            box-shadow: none;
+        }
+        .feature-card.coming { opacity: 0.65; }
+        .badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .badge-live { background: #fff3e0; color: var(--primary); }
+        .badge-coming { background: #f1f3f5; color: #868e96; }
+        .feature-card .card-icon { font-size: 36px; margin-bottom: 12px; }
+        .feature-card h3 { font-size: 17px; margin-bottom: 6px; }
+        .feature-card p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+        .feature-card ul { list-style: none; padding: 0; margin-top: 10px; }
+        .feature-card ul li { font-size: 12px; padding: 3px 0; color: var(--text-light); }
+        .feature-card ul li::before { content: "• "; color: var(--primary); }
+
+        /* ── 파트너십 ── */
+        .partner-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px 24px;
+        }
+        .partner-card .card-icon { font-size: 36px; margin-bottom: 12px; }
+        .partner-card h3 { font-size: 17px; margin-bottom: 6px; }
+        .partner-card p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+        /* ── CTA ── */
+        .cta-section {
+            text-align: center;
+            padding: 80px 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: #fff;
+        }
+        .cta-section h2 { font-size: 32px; margin-bottom: 12px; font-weight: 800; }
+        .cta-section p { font-size: 16px; opacity: 0.9; margin-bottom: 32px; }
+        .cta-section .btn { background: #fff; color: var(--primary); }
+        .cta-section .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+
+        /* ── 푸터 ── */
+        .footer {
+            text-align: center;
+            padding: 32px 24px;
+            font-size: 13px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+        }
+
+        /* ── 반응형 ── */
+        @media (max-width: 768px) {
+            .hero { padding: 80px 20px 70px; }
+            .hero h1 { font-size: 52px; letter-spacing: -2px; }
+            .hero .tagline { font-size: 18px; }
+            .cycle-flow { flex-direction: column; }
+            .cycle-arrow { transform: rotate(90deg); }
+            .navbar { flex-direction: column; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 네비게이션 -->
+    <header class="navbar">
+        <a href="../index.html" class="logo">🐾 PetFit</a>
+        <nav>
+            <a href="vet_map.html" onclick="return go(this.href)">🏥 동물병원</a>
+            <a href="food_analysis.html" onclick="return go(this.href)">📸 사료 분석</a>
+            <a href="feeding.html" onclick="return go(this.href)">🥣 급여량</a>
+            <a href="healthcare.html" onclick="return go(this.href)">📊 건강</a>
+            <a href="encyclopedia.html" onclick="return go(this.href)">📚 백과</a>
+        </nav>
+    </header>
+
+    <!-- 히어로 -->
+    <section class="hero">
+        <h1>PetFit</h1>
+        <p class="tagline">좋은 사료가 아니라, 우리 아이에게 맞는 사료를 찾습니다.</p>
+        <p class="sub-tagline">건강정보 기록부터 맞춤 사료 분석, 동물병원 연동까지.<br>반려견 건강 관리의 새로운 기준.</p>
+        <div class="hero-buttons">
+            <a href="food_analysis.html" onclick="return go(this.href)" class="btn btn-primary">사료 분석 시작하기</a>
+            <a href="#features" class="btn btn-outline">기능 살펴보기</a>
+        </div>
+        <div class="scroll-hint">↓ 스크롤하여 더 알아보기</div>
+    </section>
+
+    <!-- 건강 관리 사이클 -->
+    <section class="cycle-section">
+        <h2>PetFit 건강 관리 사이클</h2>
+        <p class="section-desc">기록하고, 추천받고, 연결하는 순환 구조로 우리 아이 건강을 관리합니다.</p>
+        <div class="cycle-flow">
+            <div class="cycle-step">
+                <div class="step-num">① REMEMBER</div>
+                <div class="step-icon">🪪</div>
+                <h3>Pet Health Passport</h3>
+                <p>종, 나이, 알레르기, 질병, 예방접종, 체중 등 건강정보를 기록합니다.</p>
+            </div>
+            <div class="cycle-arrow">→</div>
+            <div class="cycle-step">
+                <div class="step-num">② RECOMMEND</div>
+                <div class="step-icon">🍖</div>
+                <h3>Personalized Food Score</h3>
+                <p>사료 성분 사진을 찍으면 우리 아이에게 맞는 적합도를 100점 만점으로 분석합니다.</p>
+            </div>
+            <div class="cycle-arrow">→</div>
+            <div class="cycle-step">
+                <div class="step-num">③ CONNECT</div>
+                <div class="step-icon">🏥</div>
+                <h3>Pet Health Report</h3>
+                <p>건강·식이정보를 정리해 수의사에게 공유합니다. 진료 결과는 다시 Passport에 저장.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 사료 점수 설명 -->
+    <section class="section">
+        <div class="score-content">
+            <h2>사료 적합도는 이렇게 계산됩니다</h2>
+            <p class="section-desc">"이 사료가 좋은지"가 아니라, "우리 아이에게 얼마나 맞는지"를 평가합니다.</p>
+            <div class="score-breakdown">
+                <div class="score-item"><div class="percent">45%</div><div class="label">영양기준 적합성</div></div>
+                <div class="score-item"><div class="percent">20%</div><div class="label">체중·에너지</div></div>
+                <div class="score-item"><div class="percent">15%</div><div class="label">생애주기</div></div>
+                <div class="score-item"><div class="percent">15%</div><div class="label">건강관리 목표</div></div>
+                <div class="score-item"><div class="percent">5%</div><div class="label">과거 급여 경험</div></div>
+            </div>
+            <div class="score-quote">
+                "몽이는 6세 중성화 소형견이며 현재 목표 체중보다 약간 높은 상태입니다. 해당 제품은 생애주기 및 체급에는 적합하지만 에너지 밀도가 높아 급여량 조절이 필요합니다."
+            </div>
+            <p class="score-note">
+                등록된 알레르기 원료나 식이 금기가 확인되면 점수와 무관하게 먼저 경고합니다.<br>
+                '기본 균형 식단' 선택 시 건강관리 목표 항목을 제외하고 정규화합니다.
+            </p>
+        </div>
+    </section>
+
+    <!-- 주요 기능 -->
+    <section class="section section-alt" id="features">
+        <h2>주요 기능</h2>
+        <p class="section-desc">PetFit이 제공하는 핵심 서비스</p>
+        <div class="features-grid">
+            <a href="food_analysis.html" onclick="return go(this.href)" class="feature-card">
+                <span class="badge badge-live">사용 가능</span>
+                <div class="card-icon">📸</div>
+                <h3>사료 분석 &amp; 점수</h3>
+                <p>사료 영양성분 사진을 AI가 읽어 맞춤 적합도를 산출합니다.</p>
+                <ul>
+                    <li>PetFit Match 점수 (100점 만점)</li>
+                    <li>알레르기 충돌 경고 (Safety Gate)</li>
+                    <li>기저질환 적합성 분석</li>
+                    <li>추천 사료 TOP 3</li>
+                </ul>
+            </a>
+
+            <a href="feeding.html" onclick="return go(this.href)" class="feature-card">
+                <span class="badge badge-live">사용 가능</span>
+                <div class="card-icon">🥣</div>
+                <h3>급여량 &amp; 영양소 분석</h3>
+                <p>체중과 생애주기로 하루 필요 열량을 계산해 한 끼 급여량을 알려줍니다.</p>
+                <ul>
+                    <li>RER·DER 기반 급여량 (g + 컵 환산)</li>
+                    <li>6대 핵심 영양소 도넛 차트</li>
+                    <li>간식 칼로리 연동 자동 차감</li>
+                    <li>간식 한도(DER 10%) 초과 경고</li>
+                </ul>
+            </a>
+
+            <a href="healthcare.html" onclick="return go(this.href)" class="feature-card">
+                <span class="badge badge-live">사용 가능</span>
+                <div class="card-icon">📊</div>
+                <h3>건강 분석 레포트</h3>
+                <p>13개 항목을 입력하면 AI가 인바디처럼 건강 리포트를 만들어 줍니다.</p>
+                <ul>
+                    <li>체중 변화 히스토리 그래프</li>
+                    <li>활동·생활 패턴 레이더 차트</li>
+                    <li>건강 위험 요소 평가</li>
+                    <li>수의사 공유용 리포트</li>
+                </ul>
+            </a>
+
+            <a href="vet_map.html" onclick="return go(this.href)" class="feature-card">
+                <span class="badge badge-live">사용 가능</span>
+                <div class="card-icon">🗺️</div>
+                <h3>동물병원 지도</h3>
+                <p>현재 위치 기준으로 근처 동물병원을 찾아 바로 전화할 수 있습니다.</p>
+                <ul>
+                    <li>GPS 기반 자동 위치 감지</li>
+                    <li>진료과목별 아이콘 표시</li>
+                    <li>원클릭 전화 연결</li>
+                    <li>카카오맵 영업시간 연동</li>
+                </ul>
+            </a>
+
+            <a href="vet_map.html" onclick="return go(this.href)" class="feature-card">
+                <span class="badge badge-live">사용 가능</span>
+                <div class="card-icon">🚨</div>
+                <h3>응급처치 가이드</h3>
+                <p>지도 화면의 🚨 버튼으로 언제든 열 수 있는 응급 대응 패널입니다.</p>
+                <ul>
+                    <li>구토·경련·출혈·중독 등 8가지 상황</li>
+                    <li>해야 할 것 / 하면 안 되는 것</li>
+                    <li>병원에 가야 하는 판단 기준</li>
+                    <li>AI 수의사 실시간 상담</li>
+                </ul>
+            </a>
+
+            <a href="encyclopedia.html" onclick="return go(this.href)" class="feature-card">
+                <span class="badge badge-live">사용 가능</span>
+                <div class="card-icon">📚</div>
+                <h3>강아지 백과사전</h3>
+                <p>견종·질병·음식 정보를 카드로 정리하고, AI 검색으로 확장합니다.</p>
+                <ul>
+                    <li>인기 견종 상세 정보</li>
+                    <li>주요 질병 (증상·치료·예방)</li>
+                    <li>음식 안전도 (가능 / 주의 / 금지)</li>
+                    <li>AI 검색으로 무한 확장</li>
+                </ul>
+            </a>
+
+            <div class="feature-card coming">
+                <span class="badge badge-coming">준비중</span>
+                <div class="card-icon">🪪</div>
+                <h3>Pet Health Passport</h3>
+                <p>우리 아이 건강정보를 한곳에 기록하고 병원과 공유합니다.</p>
+                <ul>
+                    <li>종 / 알레르기 / 진단 질병 / 예방접종</li>
+                    <li>복용약 / 수술 경력 / 현재 식단</li>
+                    <li>산책 · 배변 · 식욕 변화 기록</li>
+                    <li>치아 관리 · 체중 트래킹</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- 비즈니스 파트너십 -->
+    <section class="section">
+        <h2>비즈니스 파트너십</h2>
+        <p class="section-desc">PetFit의 데이터와 플랫폼을 활용한 협업 기회</p>
+        <div class="features-grid">
+            <div class="partner-card">
+                <div class="card-icon">🏥</div>
+                <h3>동물병원 제휴</h3>
+                <p>Passport 데이터 연동으로 진료 효율 향상. 예약 시스템 연계 및 지역 내 견종·질병 분포 데이터 제공. 향후 개원 시 입지 자료로 활용 가능.</p>
+            </div>
+            <div class="partner-card">
+                <div class="card-icon">🍖</div>
+                <h3>사료회사 빅데이터</h3>
+                <p>견종별·나이별 선호 제품, 사료 전환 시점과 이유, 급여 후 건강 변화의 상관관계 데이터. 제품 추천란 노출 광고.</p>
+            </div>
+            <div class="partner-card">
+                <div class="card-icon">🛡️</div>
+                <h3>펫보험사 연계</h3>
+                <p>Passport 건강정보 기반 보험료 책정. 정밀한 리스크 평가로 맞춤형 보험 상품 설계가 가능합니다.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <h2>지금 바로 시작하세요</h2>
+        <p>우리 아이 건강, PetFit과 함께 관리해보세요.</p>
+        <a href="food_analysis.html" onclick="return go(this.href)" class="btn">📸 사료 분석 시작하기</a>
+    </section>
+
+    <!-- 푸터 -->
+    <footer class="footer">
+        <p>© 2026 PetFit. All rights reserved.</p>
+        <p style="margin-top:4px;">이 서비스는 수의학적 조언을 대체하지 않습니다. 정확한 진단은 수의사와 상담하세요.</p>
+    </footer>
+
+    <script>
+        // 페이지 이동 시 페이드 전환
+        function go(url) {
+            document.body.classList.add('fade-out');
+            setTimeout(function () { window.location.href = url; }, 350);
+            return false;
+        }
+    </script>
+</body>
+</html>

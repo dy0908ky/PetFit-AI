@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 PetFit - 백과사전</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <style>
+        body {
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        body.fade-out {
+            animation: fadeOut 0.35s ease forwards;
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-12px); }
+        }
+        /* 탭 */
+        .enc-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--border);
+        }
+        .enc-tab {
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-muted);
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .enc-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .enc-tab:hover { color: var(--primary); }
+
+        /* 검색 */
+        .search-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .search-bar input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+        }
+        .search-bar input:focus { border-color: var(--primary); }
+        .search-bar button {
+            padding: 12px 20px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* 카드 그리드 */
+        .enc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        .enc-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .enc-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        .enc-card .card-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+        .enc-card .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .enc-card .card-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .enc-card .card-tags {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .enc-card .tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            background: #fff3e0;
+            color: #e8790a;
+            border-radius: 10px;
+        }
+        .tag-danger { background: #ffe3e3 !important; color: #e03131 !important; }
+        .tag-safe { background: #fff3e0 !important; color: #e8790a !important; }
+        .tag-warning { background: #fff3bf !important; color: #e67700 !important; }
+
+        /* 상세 모달 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #fff;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 32px;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f1f3f5;
+            border-radius: 50%;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .modal h2 { margin-bottom: 16px; }
+        .modal .info-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .modal .info-label {
+            font-weight: 600;
+            min-width: 80px;
+            color: var(--text-light);
+        }
+
+        /* AI 답변 영역 */
+        .ai-answer {
+            margin-top: 24px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary);
+        }
+        .ai-answer p { font-size: 14px; line-height: 1.7; }
+
+        /* API 키 바 */
+        .api-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+        .api-bar input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .api-bar label {
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <!-- 네비게이션 -->
+    <header class="navbar">
+        <a href="../index.html" class="logo">🐾 PetFit</a>
+        <nav>
+            <a href="../index.html" onclick="return transitionTo(this.href)">홈</a>
+            <a href="vet_map.html" onclick="return transitionTo(this.href)">🏥 동물병원</a>
+            <a href="food_analysis.html" onclick="return transitionTo(this.href)">📸 사료 분석</a>
+            <a href="feeding.html" onclick="return transitionTo(this.href)">🥣 급여량</a>
+            <a href="healthcare.html" onclick="return transitionTo(this.href)">📊 건강</a>
+            <a href="encyclopedia.html" class="active">📚 백과</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <h1 style="margin-bottom:8px;">📚 강아지 백과사전</h1>
+        <p style="color:var(--text-light); margin-bottom:20px;">견종, 질병, 음식 정보를 한눈에! 검색하면 AI가 상세하게 알려줘요.</p>
+
+        <!-- API Key: config.js에서 자동 로드 -->
+        <input type="hidden" id="gemini-key">
+
+        <!-- 검색 -->
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="견종, 질병, 음식 이름을 검색하세요..." onkeypress="if(event.key==='Enter')aiSearch()">
+            <button onclick="aiSearch()">🔍 AI 검색</button>
+        </div>
+
+        <!-- 탭 -->
+        <div class="enc-tabs">
+            <button class="enc-tab active" onclick="switchEncTab('breeds')">🐕 견종</button>
+            <button class="enc-tab" onclick="switchEncTab('diseases')">🏥 질병</button>
+            <button class="enc-tab" onclick="switchEncTab('foods')">🍖 음식</button>
+        </div>
+
+        <!-- 콘텐츠 -->
+        <div id="enc-content"></div>
+
+        <!-- AI 검색 결과 -->
+        <div class="ai-answer" id="ai-answer" style="display:none;">
+            <h3>🤖 AI 검색 결과</h3>
+            <div id="ai-answer-content"></div>
+        </div>
+    </main>
+
+    <!-- 상세 모달 -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+        <div class="modal" id="modal-content"></div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════
+        // 데이터
+        // ═══════════════════════════════════════
+
+        const breedsData = [
+            { name: "말티즈", icon: "🐩", size: "소형", weight: "2~4kg", lifespan: "12~15년", personality: "활발, 애교 많음, 사교적", exercise: "낮음", diseases: ["슬개골탈구", "치주질환", "눈물자국"], origin: "몰타" },
+            { name: "푸들", icon: "🐩", size: "소~대형", weight: "2~30kg", lifespan: "12~15년", personality: "영리, 활발, 훈련성 좋음", exercise: "중간", diseases: ["슬개골탈구", "피부병", "귀 감염"], origin: "프랑스/독일" },
+            { name: "포메라니안", icon: "🐕", size: "소형", weight: "1.5~3kg", lifespan: "12~16년", personality: "호기심, 활발, 경계심", exercise: "낮음", diseases: ["슬개골탈구", "기관허탈", "탈모증"], origin: "독일" },
+            { name: "치와와", icon: "🐕", size: "소형", weight: "1~3kg", lifespan: "14~18년", personality: "용감, 충성, 경계심 강함", exercise: "낮음", diseases: ["슬개골탈구", "저혈당", "수두증"], origin: "멕시코" },
+            { name: "시츄", icon: "🐕", size: "소형", weight: "4~7kg", lifespan: "10~16년", personality: "온순, 다정, 느긋함", exercise: "낮음", diseases: ["안구건조증", "호흡기질환", "피부병"], origin: "중국" },
+            { name: "요크셔테리어", icon: "🐕", size: "소형", weight: "2~3kg", lifespan: "13~16년", personality: "활발, 용감, 애정 깊음", exercise: "낮음", diseases: ["슬개골탈구", "저혈당", "치주질환"], origin: "영국" },
+            { name: "골든리트리버", icon: "🦮", size: "대형", weight: "25~34kg", lifespan: "10~12년", personality: "온순, 충성, 지능 높음", exercise: "높음", diseases: ["고관절이형성", "암", "피부염"], origin: "영국" },
+            { name: "래브라도리트리버", icon: "🦮", size: "대형", weight: "25~36kg", lifespan: "10~12년", personality: "친화적, 활발, 순종적", exercise: "높음", diseases: ["고관절이형성", "비만", "관절염"], origin: "캐나다" },
+            { name: "비숑프리제", icon: "🐩", size: "소형", weight: "3~5kg", lifespan: "12~15년", personality: "쾌활, 애교, 사교적", exercise: "중간", diseases: ["슬개골탈구", "알레르기", "눈물자국"], origin: "프랑스" },
+            { name: "시바이누", icon: "🐕", size: "중형", weight: "8~11kg", lifespan: "12~15년", personality: "독립적, 영리, 충성", exercise: "중간", diseases: ["알레르기", "슬개골탈구", "갑상선질환"], origin: "일본" },
+            { name: "코기", icon: "🐕", size: "중형", weight: "10~14kg", lifespan: "12~15년", personality: "활발, 영리, 애정 깊음", exercise: "중간~높음", diseases: ["디스크", "비만", "고관절이형성"], origin: "영국" },
+            { name: "진돗개", icon: "🐕", size: "중형", weight: "15~23kg", lifespan: "12~15년", personality: "충성, 용감, 독립적", exercise: "높음", diseases: ["피부병", "갑상선질환"], origin: "한국" },
+            { name: "닥스훈트", icon: "🐕", size: "소형", weight: "5~12kg", lifespan: "12~16년", personality: "호기심, 용감, 고집", exercise: "중간", diseases: ["디스크", "비만", "치주질환"], origin: "독일" },
+            { name: "불독", icon: "🐕", size: "중형", weight: "18~25kg", lifespan: "8~10년", personality: "온순, 고집, 다정", exercise: "낮음", diseases: ["호흡기질환", "피부염", "고관절이형성"], origin: "영국" },
+            { name: "비글", icon: "🐕", size: "중형", weight: "8~14kg", lifespan: "12~15년", personality: "쾌활, 호기심, 사교적", exercise: "높음", diseases: ["비만", "귀 감염", "디스크"], origin: "영국" },
+            { name: "허스키", icon: "🐕", size: "대형", weight: "16~27kg", lifespan: "12~14년", personality: "활발, 독립적, 친화적", exercise: "매우 높음", diseases: ["안과질환", "고관절이형성", "피부병"], origin: "시베리아" },
+            { name: "사모예드", icon: "🐕", size: "대형", weight: "16~30kg", lifespan: "12~14년", personality: "온순, 활발, 사교적", exercise: "높음", diseases: ["고관절이형성", "피부병", "당뇨"], origin: "러시아" },
+            { name: "슈나우저", icon: "🐕", size: "소~대형", weight: "4~35kg", lifespan: "12~15년", personality: "영리, 활발, 경계심", exercise: "중간", diseases: ["피부병", "요로결석", "당뇨"], origin: "독일" },
+            { name: "프렌치불독", icon: "🐕", size: "소형", weight: "8~14kg", lifespan: "10~12년", personality: "쾌활, 애교, 적응력 좋음", exercise: "낮음", diseases: ["호흡기질환", "피부염", "척추질환"], origin: "프랑스" },
+            { name: "보더콜리", icon: "🐕", size: "중형", weight: "12~20kg", lifespan: "12~15년", personality: "최고 지능, 활발, 민첩", exercise: "매우 높음", diseases: ["고관절이형성", "안과질환", "간질"], origin: "영국" }
+        ];
+
+        const diseasesData = [
+            { name: "슬개골탈구", icon: "🦵", severity: "중간~높음", symptoms: ["뒷다리 절뚝", "갑자기 다리 들기", "깡충 뛰기"], breeds: ["말티즈", "푸들", "포메라니안", "치와와"], treatment: "경증: 관리/물리치료, 중증: 수술", prevention: "적정 체중 유지, 미끄러운 바닥 피하기" },
+            { name: "디스크(추간판질환)", icon: "🦴", severity: "높음", symptoms: ["통증으로 움츠림", "뒷다리 마비", "계단 기피"], breeds: ["닥스훈트", "코기", "비글"], treatment: "경증: 약물+안정, 중증: 수술", prevention: "점프/계단 줄이기, 체중 관리" },
+            { name: "피부염/알레르기", icon: "🧴", severity: "낮음~중간", symptoms: ["가려움", "과도한 긁기/핥기", "발적/탈모"], breeds: ["골든리트리버", "시바이누", "불독"], treatment: "원인 제거, 약물치료, 식이조절", prevention: "알레르기 원인 파악, 정기 목욕" },
+            { name: "치주질환", icon: "🦷", severity: "중간", symptoms: ["구취", "잇몸 출혈", "밥 먹기 힘들어함"], breeds: ["소형견 전체", "말티즈", "요크셔테리어"], treatment: "스케일링, 발치, 항생제", prevention: "매일 양치, 덴탈껌" },
+            { name: "비만", icon: "⚖️", severity: "중간", symptoms: ["갈비뼈 안 만져짐", "움직임 감소", "호흡 가빠짐"], breeds: ["래브라도", "비글", "코기", "닥스훈트"], treatment: "식이조절, 운동량 증가", prevention: "적정 급여량, 규칙적 운동" },
+            { name: "고관절이형성증", icon: "🦴", severity: "높음", symptoms: ["뒷다리 절뚝", "계단 기피", "엉덩이 흔들며 걷기"], breeds: ["골든리트리버", "래브라도", "허스키"], treatment: "약물, 물리치료, 심하면 수술", prevention: "적정 체중, 과도한 운동 피하기" },
+            { name: "기관허탈", icon: "😮‍💨", severity: "중간~높음", symptoms: ["거위 소리 기침", "흥분 시 악화", "호흡곤란"], breeds: ["포메라니안", "요크셔테리어", "치와와"], treatment: "약물, 심하면 스텐트 시술", prevention: "하네스 사용, 체중 관리" },
+            { name: "외이염(귀 감염)", icon: "👂", severity: "낮음~중간", symptoms: ["귀 긁기", "머리 흔들기", "귀 냄새/분비물"], breeds: ["푸들", "코커스파니엘", "비글"], treatment: "귀 세정, 항생제/항진균제", prevention: "정기적 귀 청소, 건조 유지" },
+            { name: "심장병", icon: "❤️", severity: "높음", symptoms: ["기침(특히 밤)", "호흡곤란", "운동 불내성"], breeds: ["말티즈", "시츄", "캐벌리어"], treatment: "약물 치료(평생)", prevention: "정기 검진, 적정 체중" },
+            { name: "당뇨", icon: "💉", severity: "높음", symptoms: ["물 많이 마심", "소변량 증가", "체중 감소"], breeds: ["슈나우저", "사모예드", "푸들"], treatment: "인슐린 주사, 식이조절", prevention: "비만 방지, 규칙적 식사" },
+            { name: "백내장", icon: "👁️", severity: "중간", symptoms: ["눈 하얗게 변함", "물건에 부딪힘", "계단 주저함"], breeds: ["푸들", "시츄", "코커스파니엘"], treatment: "수술(인공렌즈)", prevention: "자외선 노출 줄이기, 정기 검진" },
+            { name: "구토/위장염", icon: "🤮", severity: "낮음~높음", symptoms: ["구토", "설사", "식욕 저하"], breeds: ["전 견종"], treatment: "금식, 수액, 약물", prevention: "이물질 섭취 방지, 식이 관리" },
+            { name: "요로결석", icon: "💎", severity: "중간~높음", symptoms: ["소변에 피", "소변 찔끔", "배뇨 시 통증"], breeds: ["슈나우저", "시츄", "달마시안"], treatment: "식이요법, 심하면 수술", prevention: "충분한 수분, 적절한 식이" },
+            { name: "간질(발작)", icon: "⚡", severity: "높음", symptoms: ["전신 경련", "의식 소실", "침 흘림"], breeds: ["보더콜리", "비글", "골든리트리버"], treatment: "항경련제(평생 복용)", prevention: "스트레스 관리, 약물 순응" },
+            { name: "갑상선기능저하증", icon: "🦋", severity: "중간", symptoms: ["무기력", "체중 증가", "탈모/피부 변화"], breeds: ["골든리트리버", "진돗개", "시바이누"], treatment: "갑상선 호르몬제(평생)", prevention: "정기 검진" }
+        ];
+
+        const foodsData = [
+            { name: "닭가슴살", icon: "🍗", safe: "safe", note: "고단백 저지방. 삶거나 쪄서 급여. 뼈 제거 필수." },
+            { name: "고구마", icon: "🍠", safe: "safe", note: "식이섬유 풍부. 삶아서 소량 급여. 과다 시 가스 유발." },
+            { name: "당근", icon: "🥕", safe: "safe", note: "비타민A 풍부. 생/삶은 것 모두 가능. 치아 건강에 도움." },
+            { name: "블루베리", icon: "🫐", safe: "safe", note: "항산화 성분. 간식으로 소량 급여." },
+            { name: "사과", icon: "🍎", safe: "safe", note: "씨와 줄기 제거 후 급여. 비타민C 풍부." },
+            { name: "바나나", icon: "🍌", safe: "safe", note: "칼륨 풍부. 과다 시 변비 유발. 소량만." },
+            { name: "수박", icon: "🍉", safe: "safe", note: "수분 보충에 좋음. 씨와 껍질 제거 필수." },
+            { name: "연어", icon: "🐟", safe: "safe", note: "오메가3 풍부. 반드시 익혀서. 뼈 제거." },
+            { name: "계란", icon: "🥚", safe: "safe", note: "완숙으로 급여. 단백질+비오틴 풍부." },
+            { name: "오이", icon: "🥒", safe: "safe", note: "저칼로리 수분 보충. 다이어트 간식으로 좋음." },
+            { name: "브로콜리", icon: "🥦", safe: "safe", note: "소량은 OK. 과다 시 가스/위장 자극." },
+            { name: "쌀밥", icon: "🍚", safe: "safe", note: "소화 잘 됨. 위장 불편 시 삶은 닭+쌀밥 급여." },
+            { name: "초콜릿", icon: "🍫", safe: "danger", note: "테오브로민 중독. 구토, 경련, 사망 가능. 다크 > 밀크 순 위험." },
+            { name: "포도/건포도", icon: "🍇", safe: "danger", note: "급성 신부전 유발. 소량도 치명적. 절대 금지." },
+            { name: "자일리톨(껌)", icon: "🍬", safe: "danger", note: "극소량도 저혈당→간부전. 껌, 치약, 일부 빵에 포함." },
+            { name: "양파/마늘", icon: "🧅", safe: "danger", note: "용혈성 빈혈 유발. 익혀도 독성 유지. 모든 형태 금지." },
+            { name: "마카다미아", icon: "🥜", safe: "danger", note: "구토, 고열, 뒷다리 마비. 소량도 위험." },
+            { name: "아보카도", icon: "🥑", safe: "danger", note: "페르신 독소. 구토, 설사 유발." },
+            { name: "카페인(커피/차)", icon: "☕", safe: "danger", note: "빈맥, 흥분, 발작. 모든 카페인 음료 금지." },
+            { name: "알코올", icon: "🍺", safe: "danger", note: "소량도 간/뇌 손상. 구토, 호흡곤란, 사망 가능." },
+            { name: "생 감자", icon: "🥔", safe: "warning", note: "솔라닌 독소(생). 익히면 소량 OK. 녹색 부분 제거." },
+            { name: "우유", icon: "🥛", safe: "warning", note: "대부분 유당불내증. 소화불량/설사 유발. 강아지용 우유 대체." },
+            { name: "치즈", icon: "🧀", safe: "warning", note: "소량은 OK(간식/약 급여용). 과다 시 비만/소화불량." },
+            { name: "뼈(익힌)", icon: "🦴", safe: "warning", note: "익힌 뼈는 부서져 내장 손상 위험. 생뼈 or 덴탈 장난감 사용." },
+            { name: "간(소/닭)", icon: "🫁", safe: "warning", note: "소량은 영양 좋음. 과다 시 비타민A 과잉증." },
+            { name: "토마토", icon: "🍅", safe: "warning", note: "잘 익은 빨간 과육만 소량 OK. 줄기/잎/녹색 부분 독성." },
+            { name: "옥수수", icon: "🌽", safe: "safe", note: "알갱이만 소량 OK. 옥수수 속대는 장폐색 위험." },
+            { name: "딸기", icon: "🍓", safe: "safe", note: "비타민C 풍부. 당분 있어 소량만." },
+            { name: "호박", icon: "🎃", safe: "safe", note: "식이섬유 풍부. 변비/설사에 도움. 삶아서." },
+            { name: "두부", icon: "🫘", safe: "safe", note: "단백질 보충. 소량 급여. 과다 시 가스." }
+        ];
+
+        // ═══════════════════════════════════════
+        // 렌더링
+        // ═══════════════════════════════════════
+
+        let currentTab = 'breeds';
+
+        function switchEncTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.enc-tab').forEach(t => t.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            document.getElementById('ai-answer').style.display = 'none';
+            renderContent();
+        }
+
+        function renderContent(filter = '') {
+            const container = document.getElementById('enc-content');
+            let html = '<div class="enc-grid">';
+
+            if (currentTab === 'breeds') {
+                const filtered = breedsData.filter(b => !filter || b.name.includes(filter) || b.personality.includes(filter));
+                filtered.forEach((b, i) => {
+                    html += `
+                        <div class="enc-card" onclick="showBreedDetail(${i})">
+                            <div class="card-icon">${b.icon}</div>
+                            <div class="card-title">${b.name}</div>
+                            <div class="card-subtitle">${b.size} · ${b.weight} · ${b.lifespan}</div>
+                            <div class="card-tags">
+                                <span class="tag">${b.personality.split(',')[0]}</span>
+                                <span class="tag">운동 ${b.exercise}</span>
+                            </div>
+                        </div>`;
+                });
+            } else if (currentTab === 'diseases') {
+                const filtered = diseasesData.filter(d => !filter || d.name.includes(filter) || d.symptoms.some(s => s.includes(filter)));
+                filtered.forEach((d, i) => {
+                    html += `
+                        <div class="enc-card" onclick="showDiseaseDetail(${i})">
+                            <div class="card-icon">${d.icon}</div>
+                            <div class="card-title">${d.name}</div>
+                            <div class="card-subtitle">위험도: ${d.severity}</div>
+                            <div class="card-tags">
+                                ${d.symptoms.slice(0, 2).map(s => `<span class="tag">${s}</span>`).join('')}
+                            </div>
+                        </div>`;
+                });
+            } else if (currentTab === 'foods') {
+                const filtered = foodsData.filter(f => !filter || f.name.includes(filter));
+                filtered.forEach((f, i) => {
+                    const tagClass = f.safe === 'safe' ? 'tag-safe' : f.safe === 'danger' ? 'tag-danger' : 'tag-warning';
+                    const tagText = f.safe === 'safe' ? '✅ 급여 가능' : f.safe === 'danger' ? '🚫 절대 금지' : '⚠️ 주의';
+                    html += `
+                        <div class="enc-card" onclick="showFoodDetail(${i})">
+                            <div class="card-icon">${f.icon}</div>
+                            <div class="card-title">${f.name}</div>
+                            <div class="card-tags"><span class="tag ${tagClass}">${tagText}</span></div>
+                        </div>`;
+                });
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // 초기 렌더
+        renderContent();
+
+        // ═══════════════════════════════════════
+        // 상세 모달
+        // ═══════════════════════════════════════
+
+        function showBreedDetail(i) {
+            const b = breedsData[i];
+            document.getElementById('modal-content').innerHTML = `
+                <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('active')">✕</button>
+                <h2>${b.icon} ${b.name}</h2>
+                <div class="info-row"><span class="info-label">원산지</span>${b.origin}</div>
+                <div class="info-row"><span class="info-label">크기</span>${b.size} (${b.weight})</div>
+                <div class="info-row"><span class="info-label">수명</span>${b.lifespan}</div>
+                <div class="info-row"><span class="info-label">성격</span>${b.personality}</div>
+                <div class="info-row"><span class="info-label">운동량</span>${b.exercise}</div>
+                <div class="info-row"><span class="info-label">주의 질병</span>${b.diseases.join(', ')}</div>
+            `;
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+
+        function showDiseaseDetail(i) {
+            const d = diseasesData[i];
+            document.getElementById('modal-content').innerHTML = `
+                <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('active')">✕</button>
+                <h2>${d.icon} ${d.name}</h2>
+                <div class="info-row"><span class="info-label">위험도</span>${d.severity}</div>
+                <div class="info-row"><span class="info-label">주요 증상</span>${d.symptoms.join(', ')}</div>
+                <div class="info-row"><span class="info-label">호발 견종</span>${d.breeds.join(', ')}</div>
+                <div class="info-row"><span class="info-label">치료</span>${d.treatment}</div>
+                <div class="info-row"><span class="info-label">예방</span>${d.prevention}</div>
+            `;
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+
+        function showFoodDetail(i) {
+            const f = foodsData[i];
+            const safeText = f.safe === 'safe' ? '✅ 급여 가능' : f.safe === 'danger' ? '🚫 절대 금지' : '⚠️ 주의 필요';
+            document.getElementById('modal-content').innerHTML = `
+                <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('active')">✕</button>
+                <h2>${f.icon} ${f.name}</h2>
+                <div class="info-row"><span class="info-label">안전도</span>${safeText}</div>
+                <div class="info-row"><span class="info-label">설명</span>${f.note}</div>
+            `;
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+
+        function closeModal(e) {
+            if (e.target === document.getElementById('modal-overlay')) {
+                document.getElementById('modal-overlay').classList.remove('active');
+            }
+        }
+
+        // ═══════════════════════════════════════
+        // AI 검색
+        // ═══════════════════════════════════════
+
+        async function aiSearch() {
+            const query = document.getElementById('search-input').value.trim();
+            if (!query) return;
+
+            const apiKey = document.getElementById('gemini-key').value.trim() || (typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '');
+
+            // 먼저 정적 데이터에서 필터링
+            renderContent(query);
+
+            // AI 검색
+            if (!apiKey) {
+                document.getElementById('ai-answer').style.display = 'block';
+                document.getElementById('ai-answer-content').innerHTML = '<p>💡 Gemini API Key를 입력하면 AI가 더 상세한 정보를 알려줘요.</p>';
+                return;
+            }
+
+            document.getElementById('ai-answer').style.display = 'block';
+            document.getElementById('ai-answer-content').innerHTML = '<p>🔍 검색 중...</p>';
+
+            try {
+                const systemText = `당신은 반려견(강아지) 전문 백과사전 AI입니다.
+사용자가 견종, 질병, 음식에 대해 질문하면 정확하고 상세하게 답변하세요.
+한국어로 답변하세요. 구조화해서 보기 쉽게 작성하세요.
+위험한 음식에 대해서는 반드시 경고하세요.`;
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        system_instruction: { parts: [{ text: systemText }] },
+                        contents: [{ role: 'user', parts: [{ text: query }] }]
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    document.getElementById('ai-answer-content').innerHTML = `<p>⚠️ ${err.error?.message || 'API 오류'}</p>`;
+                    return;
+                }
+
+                const result = await response.json();
+                const reply = result.candidates?.[0]?.content?.parts?.[0]?.text || '결과를 가져올 수 없습니다.';
+                document.getElementById('ai-answer-content').innerHTML = `<p>${reply.replace(/\n/g, '<br>')}</p>`;
+            } catch (e) {
+                document.getElementById('ai-answer-content').innerHTML = `<p>⚠️ ${e.message}</p>`;
+            }
+        }
+    </script>
+    <script src="../config.js"></script>
+    <script>
+        // config.js의 키를 자동으로 채움
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof GEMINI_API_KEY !== 'undefined' && GEMINI_API_KEY) {
+                document.getElementById('gemini-key').value = GEMINI_API_KEY;
+            }
+        });
+        function transitionTo(url) {
+            document.body.classList.add('fade-out');
+            setTimeout(() => { window.location.href = url; }, 350);
+            return false;
+        }
+    </script>
+</body>
+</html>
